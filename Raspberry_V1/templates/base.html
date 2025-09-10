@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Scent Controller{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-title">Scent Controller</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('selection') }}" class="nav-link {% if request.endpoint == 'selection' %}active{% endif %}">
+                    Selection
+                </a>
+                <a href="{{ url_for('schedule') }}" class="nav-link {% if request.endpoint == 'schedule' %}active{% endif %}">
+                    Schedule
+                </a>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <div id="notification" class="notification hidden">
+        <span id="notification-text"></span>
+        <button id="notification-close" class="notification-close">&times;</button>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

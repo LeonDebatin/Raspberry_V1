@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Selection - Scent Controller{% endblock %}
+
+{% block content %}
+<div class="selection-container">
+    <div class="selection-header">
+        <h2>Select Scent Formula</h2>
+        <div class="status-indicator">
+            <span id="status-text">Ready</span>
+            <div id="status-dot" class="status-dot"></div>
+        </div>
+    </div>
+    
+    <div class="radial-container">
+        <div class="radial">
+            <button class="dot off" id="off-btn" data-color="off" style="--ang: 0deg;">OFF</button>
+            <button class="dot crimson" data-color="red" style="--ang: 45deg;">CRIMSON</button>
+            <button class="dot azure" data-color="blue" style="--ang: 135deg;">AZURE</button>
+            <button class="dot amber" data-color="yellow" style="--ang: 225deg;">AMBER</button>
+            <button class="dot sage" data-color="green" style="--ang: 315deg;">SAGE</button>
+        </div>
+    </div>
+    
+    <div class="config-bar">
+        <div class="config-section">
+            <label class="config-label">Cycle Time</label>
+            <div class="config-options">
+                <button class="config-btn" data-cycle="10">10s</button>
+                <button class="config-btn" data-cycle="30">30s</button>
+                <button class="config-btn active" data-cycle="60">60s</button>
+                <button class="config-btn" data-cycle="120">120s</button>
+                <button class="config-btn" data-cycle="180">180s</button>
+            </div>
+        </div>
+        
+        <div class="config-section">
+            <label class="config-label">Duration</label>
+            <div class="config-options">
+                <button class="config-btn" data-duration="5">5s</button>
+                <button class="config-btn active" data-duration="10">10s</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/selection.js') }}"></script>
+{% endblock %}

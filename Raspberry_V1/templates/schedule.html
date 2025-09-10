@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule - Scent Controller{% endblock %}
+
+{% block content %}
+<div class="schedule-container">
+    <div class="schedule-header">
+        <h2>Schedule Management</h2>
+        <div class="schedule-controls">
+            <div class="view-selector">
+                <button class="view-btn active" data-view="daily">Daily</button>
+                <button class="view-btn" data-view="weekly">Weekly</button>
+                <button class="view-btn" data-view="monthly">Monthly</button>
+            </div>
+            <button id="add-schedule-btn" class="add-btn">Add Schedule</button>
+        </div>
+    </div>
+    
+    <!-- Calendar Navigation -->
+    <div class="calendar-navigation" id="calendar-navigation">
+        <button id="prev-period" class="nav-btn">&lt;</button>
+        <div class="current-period">
+            <span id="current-period-text">Today</span>
+        </div>
+        <button id="next-period" class="nav-btn">&gt;</button>
+        <button id="today-btn" class="today-btn">Today</button>
+    </div>
+    
+    <!-- Calendar Views -->
+    <div class="calendar-container" id="calendar-container">
+        <!-- Daily View -->
+        <div id="daily-view" class="calendar-view active">
+            <div class="time-grid">
+                <div class="time-labels"></div>
+                <div class="time-slots"></div>
+            </div>
+        </div>
+        
+        <!-- Weekly View -->
+        <div id="weekly-view" class="calendar-view">
+            <div class="week-header">
+                <div class="day-header">Time</div>
+                <div class="day-header">Mon</div>
+                <div class="day-header">Tue</div>
+                <div class="day-header">Wed</div>
+                <div class="day-header">Thu</div>
+                <div class="day-header">Fri</div>
+                <div class="day-header">Sat</div>
+                <div class="day-header">Sun</div>
+            </div>
+            <div class="week-grid"></div>
+        </div>
+        
+        <!-- Monthly View -->
+        <div id="monthly-view" class="calendar-view">
+            <div class="month-header">
+                <div class="month-day">Mon</div>
+                <div class="month-day">Tue</div>
+                <div class="month-day">Wed</div>
+                <div class="month-day">Thu</div>
+                <div class="month-day">Fri</div>
+                <div class="month-day">Sat</div>
+                <div class="month-day">Sun</div>
+            </div>
+            <div class="month-grid"></div>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Schedule Modal -->
+    <div id="schedule-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Add New Schedule</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            
+            <form id="schedule-form" class="schedule-form">
+                <input type="hidden" id="schedule-id" value="">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start-time">Start Time</label>
+                        <input type="time" id="start-time" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="end-time">End Time</label>
+                        <input type="time" id="end-time" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="formula">Formula</label>
+                    <select id="formula" required>
+                        <option value="">Select Formula</option>
+                        <option value="red">Crimson</option>
+                        <option value="blue">Azure</option>
+                        <option value="yellow">Amber</option>
+                        <option value="green">Sage</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recurrence">Recurrence</label>
+                    <select id="recurrence" required>
+                        <option value="daily">Daily</option>
+                        <option value="weekdays">Weekdays Only</option>
+                        <option value="weekends">Weekends Only</option>
+                        <option value="monday">Mondays</option>
+                        <option value="tuesday">Tuesdays</option>
+                        <option value="wednesday">Wednesdays</option>
+                        <option value="thursday">Thursdays</option>
+                        <option value="friday">Fridays</option>
+                        <option value="saturday">Saturdays</option>
+                        <option value="sunday">Sundays</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cycle-time">Cycle Time</label>
+                        <select id="cycle-time" required>
+                            <option value="10">10 seconds</option>
+                            <option value="30">30 seconds</option>
+                            <option value="60" selected>60 seconds</option>
+                            <option value="120">120 seconds</option>
+                            <option value="180">180 seconds</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="duration">Duration</label>
+                        <select id="duration" required>
+                            <option value="5">5 seconds</option>
+                            <option value="10" selected>10 seconds</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancel-btn">Cancel</button>
+                    <button type="button" class="btn-danger hidden" id="delete-btn">Delete Schedule</button>
+                    <button type="submit" class="btn-primary" id="submit-btn">Add Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/schedule.js') }}"></script>
+{% endblock %}
