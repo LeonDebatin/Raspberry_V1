@@ -205,10 +205,67 @@ function getFormulaDisplayName(color) {
 ## Troubleshooting
 
 ### Common Issues
-1. **GPIO Permission Error**: Run with `sudo` or add user to gpio group
-2. **Port Already in Use**: Change port in `app.py` or kill existing process
-3. **Configuration Not Loading**: Check JSON file syntax and permissions
-4. **Schedule Not Activating**: Verify system time and schedule format
+
+#### 1. Connection Error / Buttons Not Working
+**Symptoms**: "Connection Error" message, buttons show error when pressed
+**Solution**: 
+```bash
+# Start the server first
+python app.py
+# Or use the startup script
+python start_server.py
+# Or test if server is running
+python test_server.py
+```
+
+#### 2. Buttons Moving Around After Clicking
+**Fixed**: This issue has been resolved with improved CSS positioning. Buttons now stay in their exact positions.
+
+#### 3. GPIO Permission Error
+**Solution**: Run with `sudo` or add user to gpio group:
+```bash
+sudo usermod -a -G gpio $USER
+# Then logout and login again
+```
+
+#### 4. Port Already in Use
+**Solution**: Change port in `app.py` or kill existing process:
+```bash
+# Find process using port 5000
+sudo lsof -i :5000
+# Kill the process
+sudo kill -9 <PID>
+```
+
+#### 5. Configuration Not Loading
+**Solution**: Check JSON file syntax and permissions:
+```bash
+# Validate JSON syntax
+python -m json.tool pin_mapping.json
+python -m json.tool schedules.json
+```
+
+#### 6. Schedule Not Activating
+**Solution**: Verify system time and schedule format:
+```bash
+# Check system time
+date
+# Ensure schedules.json has correct time format (HH:MM)
+```
+
+### Testing Tools
+
+#### Server Test
+```bash
+python test_server.py
+```
+This will check if the server is running and test API endpoints.
+
+#### Easy Startup
+```bash
+python start_server.py
+```
+This will check dependencies and start the server with helpful messages.
 
 ### Logs
 Application logs are printed to console. For production, configure proper logging:
@@ -216,6 +273,12 @@ Application logs are printed to console. For production, configure proper loggin
 import logging
 logging.basicConfig(level=logging.INFO, filename='scent_controller.log')
 ```
+
+### Browser Console
+If you're having issues with the web interface:
+1. Open browser developer tools (F12)
+2. Check the Console tab for JavaScript errors
+3. Check the Network tab for failed API requests
 
 ## License
 

@@ -160,3 +160,131 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Mobile-specific enhancements
+class MobileEnhancements {
+    constructor() {
+        this.init();
+    }
+    
+    init() {
+        this.addTouchFeedback();
+        this.preventZoom();
+        this.addSwipeGestures();
+        this.optimizeScrolling();
+    }
+    
+    addTouchFeedback() {
+        // Add haptic feedback for supported devices
+        document.addEventListener('touchstart', (e) => {
+            // EXCLUDE dots to prevent movement
+            if (e.target.matches('.config-btn, .view-btn, .btn-primary, .btn-secondary, .btn-danger')) {
+                // Vibrate for 10ms on supported devices
+                if (navigator.vibrate) {
+                    navigator.vibrate(10);
+                }
+                
+                // Add visual feedback (NOT for dots)
+                e.target.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    e.target.style.transform = '';
+                }, 150);
+            }
+            
+            // Haptic feedback for dots but NO visual transform
+            if (e.target.matches('.dot')) {
+                if (navigator.vibrate) {
+                    navigator.vibrate(10);
+                }
+            }
+        });
+    }
+    
+    preventZoom() {
+        // Prevent double-tap zoom on buttons
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                if (e.target.matches('.dot, .config-btn, .view-btn, button')) {
+                    e.preventDefault();
+                }
+            }
+            lastTouchEnd = now;
+        }, false);
+    }
+    
+    addSwipeGestures() {
+        let startX = 0;
+        let startY = 0;
+        
+        // Add swipe navigation for calendar views
+        const calendarContainer = document.getElementById('calendar-container');
+        if (calendarContainer) {
+            calendarContainer.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            });
+            
+            calendarContainer.addEventListener('touchend', (e) => {
+                if (!startX || !startY) return;
+                
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                
+                const diffX = startX - endX;
+                const diffY = startY - endY;
+                
+                // Only trigger if horizontal swipe is dominant
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                    if (diffX > 0) {
+                        // Swipe left - next period
+                        const nextBtn = document.getElementById('next-period');
+                        if (nextBtn) nextBtn.click();
+                    } else {
+                        // Swipe right - previous period
+                        const prevBtn = document.getElementById('prev-period');
+                        if (prevBtn) prevBtn.click();
+                    }
+                }
+                
+                startX = 0;
+                startY = 0;
+            });
+        }
+    }
+    
+    optimizeScrolling() {
+        // Smooth scrolling for mobile
+        document.documentElement.style.scrollBehavior = 'smooth';
+        
+        // Prevent overscroll bounce on iOS
+        document.body.style.overscrollBehavior = 'none';
+        
+        // Optimize scroll performance
+        const scrollElements = document.querySelectorAll('.calendar-container, .modal-content');
+        scrollElements.forEach(element => {
+            element.style.webkitOverflowScrolling = 'touch';
+        });
+    }
+}
+
+// Initialize mobile enhancements when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Detect if device is mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                    || window.innerWidth <= 768;
+    
+    if (isMobile) {
+        new MobileEnhancements();
+        
+        // Add mobile class to body for additional styling hooks
+        document.body.classList.add('mobile-device');
+        
+        // Optimize viewport for mobile
+        const viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0');
+        }
+    }
+});

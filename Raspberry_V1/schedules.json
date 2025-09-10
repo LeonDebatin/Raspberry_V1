@@ -1,24 +1,3 @@
 {
-  "schedules": [
-    {
-      "id": 1,
-      "start_time": "10:00",
-      "end_time": "11:00",
-      "formula": "yellow",
-      "cycle_time": 60,
-      "duration": 10,
-      "recurrence": "daily",
-      "enabled": true
-    },
-    {
-      "id": 2,
-      "start_time": "05:00",
-      "end_time": "06:00",
-      "formula": "blue",
-      "cycle_time": 60,
-      "duration": 5,
-      "recurrence": "daily",
-      "enabled": true
-    }
-  ]
+  "schedules": []
 }

@@ -13,12 +13,6 @@ class SelectionController {
         this.initializeElements();
         this.bindEvents();
         this.loadStatus();
-        
-        // Restore state if page was reloaded
-        this.restoreStateAfterReload();
-        
-        // Force initial position reset
-        setTimeout(() => this.resetButtonPositions(), 200);
     }
     
     initializeElements() {
@@ -80,21 +74,20 @@ class SelectionController {
             this.updateFormulaButtons();
             this.updateStatus(`${getFormulaDisplayName(color)} Active`, true);
             
-            // Force position reset or page reload after activation
-            if (this.usePageReload) {
-                setTimeout(() => this.forcePageReload(), 500);
-            } else {
-                setTimeout(() => this.resetButtonPositions(), 100);
-            }
-            
             window.notifications.success(
                 `${getFormulaDisplayName(color)} formula activated (${this.cycleTime}s cycle, ${this.duration}s duration)`
             );
             
         } catch (error) {
             console.error('Error activating formula:', error);
-            this.updateStatus('Error', false);
-            window.notifications.error(`Failed to activate formula: ${error.message}`);
+            this.updateStatus('Connection Error', false);
+            
+            // Check if it's a network error
+            if (error.message.includes('fetch') || error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                window.notifications.error('Connection Error: Cannot reach the scent controller. Please check if the server is running.');
+            } else {
+                window.notifications.error(`Failed to activate formula: ${error.message}`);
+            }
         }
     }
     
@@ -110,19 +103,18 @@ class SelectionController {
             this.updateFormulaButtons();
             this.updateStatus('Ready', false);
             
-            // Force position reset or page reload after deactivation
-            if (this.usePageReload) {
-                setTimeout(() => this.forcePageReload(), 500);
-            } else {
-                setTimeout(() => this.resetButtonPositions(), 100);
-            }
-            
             window.notifications.success('All formulas deactivated');
             
         } catch (error) {
             console.error('Error deactivating formulas:', error);
-            this.updateStatus('Error', false);
-            window.notifications.error(`Failed to deactivate formulas: ${error.message}`);
+            this.updateStatus('Connection Error', false);
+            
+            // Check if it's a network error
+            if (error.message.includes('fetch') || error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                window.notifications.error('Connection Error: Cannot reach the scent controller. Please check if the server is running.');
+            } else {
+                window.notifications.error(`Failed to deactivate formulas: ${error.message}`);
+            }
         }
     }
     
@@ -153,87 +145,6 @@ class SelectionController {
                 btn.classList.remove('selected');
             }
         });
-        
-        // Force reset all button positions after state change
-        this.resetButtonPositions();
-    }
-
-    resetButtonPositions() {
-        // Force all buttons back to their exact mathematical positions
-        this.formulaBtns.forEach(btn => {
-            // Remove any inline styles that might have been added
-            btn.style.transform = '';
-            btn.style.left = '';
-            btn.style.top = '';
-            btn.style.position = '';
-            btn.style.width = '';
-            btn.style.height = '';
-            btn.style.translate = '';
-            
-            // Force reflow to ensure positions are recalculated
-            btn.offsetHeight;
-            
-            // Ensure classes are properly applied
-            if (!btn.classList.contains('dot')) {
-                btn.classList.add('dot');
-            }
-        });
-        
-        // Force a complete layout recalculation
-        const radial = document.querySelector('.radial');
-        if (radial) {
-            radial.offsetHeight;
-            // Force repaint
-            radial.style.display = 'none';
-            radial.offsetHeight;
-            radial.style.display = '';
-        }
-    }
-
-    // Alternative: Force page reload if positions are still problematic
-    forcePageReload() {
-        // Save current state before reload
-        const currentState = {
-            selectedFormula: this.selectedFormula,
-            isActive: this.isActive,
-            cycleTime: this.cycleTime,
-            duration: this.duration
-        };
-        
-        // Store in sessionStorage to restore after reload
-        sessionStorage.setItem('selectionState', JSON.stringify(currentState));
-        
-        // Reload the page
-        window.location.reload();
-    }
-
-    // Restore state after page reload
-    restoreStateAfterReload() {
-        const savedState = sessionStorage.getItem('selectionState');
-        if (savedState) {
-            try {
-                const state = JSON.parse(savedState);
-                this.selectedFormula = state.selectedFormula;
-                this.isActive = state.isActive;
-                this.cycleTime = state.cycleTime;
-                this.duration = state.duration;
-                
-                // Update UI to reflect restored state
-                this.updateFormulaButtons();
-                this.updateConfigButtons();
-                
-                if (this.isActive && this.selectedFormula) {
-                    this.updateStatus(`${getFormulaDisplayName(this.selectedFormula)} Active`, true);
-                } else {
-                    this.updateStatus('Ready', false);
-                }
-                
-                // Clear the saved state
-                sessionStorage.removeItem('selectionState');
-            } catch (error) {
-                console.error('Error restoring state:', error);
-            }
-        }
     }
     
     updateConfigButtons() {
@@ -283,6 +194,11 @@ class SelectionController {
         } catch (error) {
             console.error('Error loading status:', error);
             this.updateStatus('Connection Error', false);
+            
+            // Show helpful error message
+            if (error.message.includes('fetch') || error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                window.notifications.error('Cannot connect to scent controller. Please start the server by running: python app.py', 8000);
+            }
         }
     }
     

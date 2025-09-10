@@ -182,7 +182,7 @@ body {
 .radial {
     position: relative;
     width: 320px;
-    aspect-ratio: 1/1;
+    height: 320px;
     border-radius: 50%;
     background: radial-gradient(var(--primary-white) 60%, var(--cold-gray) 61% 100%);
     border: 2px solid var(--cold-gray);
@@ -192,56 +192,63 @@ body {
 
 /* Base dot - mathematically positioned, cannot jump */
 .dot {
-    --r: 110px; /* ring radius */
-    
-    /* Mathematical positioning from center */
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    translate: calc(cos(var(--ang)) * var(--r)) calc(sin(var(--ang)) * var(--r));
-    transform: translate(-50%, -50%);
-    
     /* Fixed size - no layout changes possible */
-    width: 84px;
-    height: 84px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.7);
-    box-sizing: border-box;
+    position: absolute !important;
+    width: 84px !important;
+    height: 84px !important;
+    border-radius: 50% !important;
+    border: 2px solid rgba(255, 255, 255, 0.7) !important;
+    box-sizing: border-box !important;
     
     /* Typography */
-    font: 600 11px/84px system-ui, sans-serif;
-    text-align: center;
-    color: var(--primary-white);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    font: 600 11px/84px system-ui, sans-serif !important;
+    text-align: center !important;
+    color: var(--primary-white) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
     
     /* Interaction */
-    cursor: pointer;
-    outline: none;
-    transition: box-shadow var(--transition-medium), filter var(--transition-medium);
+    cursor: pointer !important;
+    outline: none !important;
+    transition: box-shadow var(--transition-medium), filter var(--transition-medium) !important;
+    
+    /* Prevent any transforms or positioning changes */
+    transform: translate(-50%, -50%) !important;
+    translate: none !important;
+    scale: none !important;
+    rotate: none !important;
 }
 
-/* Color themes for each formula */
+/* Color themes for each formula - with fixed positioning */
 .crimson {
-    background: linear-gradient(135deg, var(--matte-red) 0%, var(--matte-red-hover) 100%);
+    background: linear-gradient(135deg, var(--matte-red) 0%, var(--matte-red-hover) 100%) !important;
+    left: calc(50% + 77.78px) !important; /* 45deg position */
+    top: calc(50% + 77.78px) !important;
 }
 
 .azure {
-    background: linear-gradient(135deg, var(--matte-blue) 0%, var(--matte-blue-hover) 100%);
+    background: linear-gradient(135deg, var(--matte-blue) 0%, var(--matte-blue-hover) 100%) !important;
+    left: calc(50% - 77.78px) !important; /* 135deg position */
+    top: calc(50% + 77.78px) !important;
 }
 
 .amber {
-    background: linear-gradient(135deg, var(--matte-yellow) 0%, var(--matte-yellow-hover) 100%);
+    background: linear-gradient(135deg, var(--matte-yellow) 0%, var(--matte-yellow-hover) 100%) !important;
+    left: calc(50% - 77.78px) !important; /* 225deg position */
+    top: calc(50% - 77.78px) !important;
 }
 
 .sage {
-    background: linear-gradient(135deg, var(--matte-green) 0%, var(--matte-green-hover) 100%);
+    background: linear-gradient(135deg, var(--matte-green) 0%, var(--matte-green-hover) 100%) !important;
+    left: calc(50% + 77.78px) !important; /* 315deg position */
+    top: calc(50% - 77.78px) !important;
 }
 
 .off {
-    background: linear-gradient(135deg, var(--charcoal) 0%, var(--pure-black) 100%);
-    --r: 0px; /* Center position */
+    background: linear-gradient(135deg, var(--charcoal) 0%, var(--pure-black) 100%) !important;
+    left: 50% !important; /* Center position */
+    top: 50% !important;
 }
 
 /* Interaction states - only visual effects, no layout changes */
@@ -2052,7 +2059,546 @@ lete Button in Modal */
     
     /* Mathematical positioning cannot be disrupted */
     box-sizing: border-box !important;
+    transform: translate(-50%, -50%) !important;
     
     /* Clean focus handling */
     outline: none !important;
+}
+
+/* Fix off button centering */
+.off {
+    --r: 0px !important;
+    translate: 0 0 !important;
+    transform: translate(-50%, -50%) !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+}/* =====
+===================================
+   MOBILE RESPONSIVE DESIGN
+   ======================================== */
+
+/* Mobile-first approach - optimize for touch */
+@media (max-width: 768px) {
+    
+    /* Navigation - Mobile optimized */
+    .navbar {
+        padding: 0.75rem 0;
+    }
+    
+    .nav-container {
+        padding: 0 1rem;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .nav-title {
+        font-size: 1.25rem;
+    }
+    
+    .nav-links {
+        gap: 1rem;
+    }
+    
+    .nav-link {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        border-radius: 25px;
+        background: var(--cold-gray);
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-link.active {
+        background: var(--accent-mint);
+        color: white;
+    }
+    
+    /* Main content - Mobile spacing */
+    .main-content {
+        padding: 1rem;
+    }
+    
+    /* Selection Page - Mobile optimized */
+    .radial-container {
+        padding: 1.5rem 1rem;
+        min-height: 300px;
+    }
+    
+    .radial {
+        width: 280px;
+        height: 280px;
+    }
+    
+    .dot {
+        --r: 95px !important; /* Smaller radius for mobile */
+        width: 70px !important;
+        height: 70px !important;
+        font-size: 10px !important;
+        line-height: 70px !important;
+        transform: translate(-50%, -50%) !important;
+    }
+    
+    .off {
+        width: 60px !important;
+        height: 60px !important;
+        line-height: 60px !important;
+        font-size: 9px !important;
+        --r: 0px !important;
+        translate: 0 0 !important;
+        transform: translate(-50%, -50%) !important;
+        left: 50% !important;
+        top: 50% !important;
+    }
+    
+    /* Configuration bar - Mobile stack */
+    .config-bar {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        margin: 0 1rem;
+    }
+    
+    .config-section {
+        text-align: center;
+    }
+    
+    .config-options {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    
+    .config-btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        min-width: 60px;
+        border-radius: 20px;
+    }
+    
+    /* Schedule Page - Mobile optimized */
+    .schedule-container {
+        padding: 1rem;
+    }
+    
+    .schedule-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .schedule-header h2 {
+        font-size: 1.75rem;
+    }
+    
+    .schedule-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .view-selector {
+        gap: 0.5rem;
+    }
+    
+    .view-btn {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.9rem;
+        border-radius: 20px;
+    }
+    
+    .add-btn {
+        padding: 0.75rem 2rem;
+        font-size: 1rem;
+        border-radius: 25px;
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    /* Calendar Navigation - Mobile */
+    .calendar-navigation {
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
+    .nav-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+        border-radius: 50%;
+    }
+    
+    .today-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+        border-radius: 20px;
+    }
+    
+    .current-period span {
+        font-size: 1rem;
+    }
+    
+    /* Daily View - Mobile */
+    .time-grid {
+        grid-template-columns: 60px 1fr;
+        gap: 0;
+    }
+    
+    .time-label {
+        padding: 0.75rem 0.25rem;
+        font-size: 0.75rem;
+    }
+    
+    .time-slot {
+        height: 50px;
+        min-height: 50px;
+    }
+    
+    /* Weekly View - Mobile */
+    .week-header {
+        grid-template-columns: 60px repeat(7, 1fr);
+        gap: 1px;
+    }
+    
+    .day-header {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.7rem;
+    }
+    
+    .week-grid {
+        grid-template-columns: 60px repeat(7, 1fr);
+        gap: 1px;
+    }
+    
+    .week-time-label {
+        min-height: 40px;
+        font-size: 0.7rem;
+        padding: 0.25rem;
+    }
+    
+    .week-day-slot {
+        min-height: 40px;
+    }
+    
+    .schedule-indicator {
+        min-height: 35px;
+        font-size: 0.6rem;
+    }
+    
+    .indicator-time {
+        font-size: 0.5rem;
+    }
+    
+    .indicator-formula {
+        font-size: 0.6rem;
+    }
+    
+    /* Monthly View - Mobile */
+    .month-header {
+        gap: 1px;
+    }
+    
+    .month-day {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.7rem;
+    }
+    
+    .month-grid {
+        gap: 1px;
+    }
+    
+    .month-date {
+        min-height: 80px;
+        padding: 0.25rem;
+    }
+    
+    .date-number {
+        font-size: 0.8rem;
+    }
+    
+    .schedule-event {
+        margin-bottom: 2px;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 0.6rem;
+        line-height: 1.2;
+    }
+    
+    .schedule-event-time {
+        font-size: 0.55rem;
+    }
+    
+    .schedule-event-formula {
+        font-size: 0.5rem;
+    }
+    
+    .schedule-more {
+        font-size: 0.6rem;
+        padding: 2px;
+    }
+    
+    /* Modal - Mobile optimized */
+    .modal {
+        padding: 1rem;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-width: 400px;
+        margin: 2rem auto;
+        border-radius: 15px;
+    }
+    
+    .modal-header {
+        padding: 1.5rem 1.5rem 1rem;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .schedule-form {
+        padding: 0 1.5rem 1.5rem;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+    
+    .form-group label {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-group input,
+    .form-group select {
+        padding: 0.75rem;
+        font-size: 1rem;
+        border-radius: 8px;
+        /* Prevent zoom on iOS */
+        font-size: 16px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+    
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+        border-radius: 25px;
+        width: 100%;
+    }
+    
+    /* Notifications - Mobile */
+    .notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        border-radius: 10px;
+        padding: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    /* Touch-friendly interactions */
+    .config-btn,
+    .view-btn,
+    .nav-btn,
+    .add-btn,
+    .time-slot,
+    .week-day-slot,
+    .month-date,
+    .schedule-event {
+        /* Minimum touch target size */
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Improve touch feedback - EXCLUDE dots to prevent movement */
+    .config-btn:active,
+    .view-btn:active,
+    .btn-primary:active,
+    .btn-secondary:active,
+    .btn-danger:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+    
+    /* Dots must never transform */
+    .dot,
+    .dot:active,
+    .dot:hover,
+    .dot:focus {
+        transform: translate(-50%, -50%) !important;
+    }
+}
+
+/* Extra small devices (phones in portrait) */
+@media (max-width: 480px) {
+    
+    .radial {
+        width: 240px;
+        height: 240px;
+    }
+    
+    .dot {
+        --r: 80px !important;
+        width: 60px !important;
+        height: 60px !important;
+        font-size: 9px !important;
+        line-height: 60px !important;
+        transform: translate(-50%, -50%) !important;
+    }
+    
+    .off {
+        width: 50px !important;
+        height: 50px !important;
+        line-height: 50px !important;
+        font-size: 8px !important;
+        --r: 0px !important;
+        translate: 0 0 !important;
+        transform: translate(-50%, -50%) !important;
+        left: 50% !important;
+        top: 50% !important;
+    }
+    
+    .config-bar {
+        margin: 0 0.5rem;
+        padding: 1rem;
+    }
+    
+    .schedule-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .month-date {
+        min-height: 70px;
+    }
+    
+    .modal-content {
+        width: 98%;
+        margin: 1rem auto;
+    }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 600px) and (orientation: landscape) {
+    
+    .radial-container {
+        padding: 1rem;
+        min-height: 250px;
+    }
+    
+    .radial {
+        width: 220px;
+        height: 220px;
+    }
+    
+    .dot {
+        --r: 75px !important;
+        width: 55px !important;
+        height: 55px !important;
+        font-size: 8px !important;
+        line-height: 55px !important;
+        transform: translate(-50%, -50%) !important;
+    }
+    
+    .config-bar {
+        flex-direction: row;
+        gap: 2rem;
+    }
+    
+    .modal-content {
+        margin: 0.5rem auto;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    
+    .dot,
+    .schedule-event,
+    .config-btn {
+        /* Sharper borders on retina displays */
+        border-width: 0.5px;
+    }
+}
+
+/* Dark mode support for mobile */
+@media (prefers-color-scheme: dark) {
+    
+    .nav-link {
+        background: var(--dark-gray);
+        color: var(--primary-white);
+    }
+    
+    .nav-link.active {
+        background: var(--accent-mint);
+        color: var(--charcoal);
+    }
+}/* Mobi
+le device specific styles */
+.mobile-device {
+    /* Disable text selection on interactive elements */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.mobile-device .dot,
+.mobile-device .config-btn,
+.mobile-device .view-btn,
+.mobile-device button {
+    /* Disable callout on iOS */
+    -webkit-touch-callout: none;
+    /* Disable tap highlight */
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* PWA-ready styles */
+@media (display-mode: standalone) {
+    .navbar {
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    .main-content {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* Accessibility improvements for mobile */
+@media (max-width: 768px) {
+    
+    /* Larger focus indicators for touch */
+    .dot:focus-visible,
+    .config-btn:focus-visible,
+    .view-btn:focus-visible {
+        outline: 3px solid #4ade80;
+        outline-offset: 2px;
+    }
+    
+    /* Better contrast for small screens */
+    .schedule-event {
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Improved readability */
+    .time-label,
+    .day-header,
+    .month-day {
+        font-weight: 600;
+    }
 }
