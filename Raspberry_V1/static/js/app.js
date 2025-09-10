@@ -2,43 +2,31 @@
 
 class NotificationManager {
     constructor() {
-        this.notification = document.getElementById('notification');
-        this.notificationText = document.getElementById('notification-text');
-        this.notificationClose = document.getElementById('notification-close');
-        
-        if (this.notificationClose) {
-            this.notificationClose.addEventListener('click', () => this.hide());
-        }
+        // Notifications disabled - no DOM elements needed
+        this.notification = null;
+        this.notificationText = null;
+        this.notificationClose = null;
     }
     
     show(message, type = 'success', duration = 5000) {
-        if (!this.notification) return;
-        
-        this.notificationText.textContent = message;
-        this.notification.className = `notification ${type}`;
-        
-        // Auto-hide after duration
-        if (duration > 0) {
-            setTimeout(() => this.hide(), duration);
-        }
+        // Notifications disabled - do nothing
+        console.log(`Notification (${type}): ${message}`);
     }
     
     hide() {
-        if (this.notification) {
-            this.notification.classList.add('hidden');
-        }
+        // Notifications disabled - do nothing
     }
     
     success(message, duration = 3000) {
-        this.show(message, 'success', duration);
+        console.log(`Success: ${message}`);
     }
     
     error(message, duration = 5000) {
-        this.show(message, 'error', duration);
+        console.log(`Error: ${message}`);
     }
     
     warning(message, duration = 4000) {
-        this.show(message, 'warning', duration);
+        console.log(`Warning: ${message}`);
     }
 }
 

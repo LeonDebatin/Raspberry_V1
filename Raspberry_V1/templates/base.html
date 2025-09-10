@@ -25,10 +25,11 @@
         {% block content %}{% endblock %}
     </main>
     
-    <div id="notification" class="notification hidden">
+    <!-- Notification system disabled -->
+    <!-- <div id="notification" class="notification hidden">
         <span id="notification-text"></span>
         <button id="notification-close" class="notification-close">&times;</button>
-    </div>
+    </div> -->
     
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     {% block scripts %}{% endblock %}
