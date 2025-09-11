@@ -15,7 +15,7 @@ gpio_controller = SimpleGPIOController()
 
 def load_pin_mapping():
     """Load GPIO pin mapping from JSON file"""
-    default_mapping = {"formulas": {"red": 18, "blue": 19, "yellow": 20, "green": 21}}
+    default_mapping = {"formulas": {"yellow": 18,  "green": 19,  "red": 20,  "blue": 21}}
 
     try:
         if os.path.exists("pin_mapping.json"):
