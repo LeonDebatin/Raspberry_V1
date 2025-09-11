@@ -2,12 +2,12 @@
   "schedules": [
     {
       "id": 1,
-      "start_time": "04:00",
-      "end_time": "05:00",
-      "formula": "blue",
+      "start_time": "10:22",
+      "end_time": "11:00",
+      "formula": "yellow",
       "cycle_time": 60,
       "duration": 10,
-      "recurrence": "thursday",
+      "recurrence": "daily",
       "enabled": true
     }
   ]

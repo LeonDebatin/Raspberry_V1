@@ -8,7 +8,7 @@ try:
     GPIO_AVAILABLE = True
 except ImportError:
     GPIO_AVAILABLE = False
-    print("RPi.GPIO not available, using mock GPIO for development")
+    # Using mock GPIO for development (silent mode)
 
 class MockGPIO:
     """Mock GPIO for development environment"""
@@ -23,16 +23,15 @@ class MockGPIO:
     
     @staticmethod
     def setup(pin, mode):
-        print(f"Mock GPIO: Setup pin {pin} as {mode}")
+        pass  # Removed debug print
     
     @staticmethod
     def output(pin, state):
-        state_str = "HIGH" if state else "LOW"
-        print(f"Mock GPIO: Set pin {pin} to {state_str}")
+        pass  # Removed debug print - GPIO operations are silent now
     
     @staticmethod
     def cleanup():
-        print("Mock GPIO: Cleanup")
+        pass  # Removed debug print
 
 class SimpleGPIOController:
     """Simplified GPIO controller for scent dispensers"""
@@ -72,11 +71,11 @@ class SimpleGPIOController:
     
     def activate_formula(self, color, cycle_time=60, duration=10, is_scheduled=False, activation_duration=None):
         """Activate single formula with timing parameters"""
-        with self.lock:
-            try:
-                # Deactivate any currently active formula
-                self.deactivate_all()
-                
+        try:
+            # Deactivate any currently active formula (preserve user override if this is a manual activation)
+            self._deactivate_all_internal(clear_user_override=is_scheduled)
+            
+            with self.lock:
                 if color not in self.pin_mapping:
                     self.logger.error(f"Unknown formula color: {color}")
                     return False
@@ -89,15 +88,20 @@ class SimpleGPIOController:
                     self.active_schedule = color
                     if activation_duration:
                         self.schedule_end_time = time.time() + activation_duration
-                    self.user_override = False
+                    # Don't change user_override if it's already True (preserve user override state)
+                    if not self.user_override:
+                        self.user_override = False
                     self.logger.info(f"Schedule activated: {color} (will run for {activation_duration}s)")
                 else:
                     # User manual activation
-                    if self.active_schedule:
-                        self.user_override = True
-                        self.logger.info(f"User override: switching from scheduled {self.active_schedule} to {color}")
+                    previous_schedule = self.active_schedule
+                    self.active_schedule = None  # Clear any active schedule
+                    self.schedule_end_time = None
+                    self.user_override = True  # Always set user override for manual activations
+                    if previous_schedule:
+                        self.logger.info(f"User override: switching from scheduled {previous_schedule} to {color}")
                     else:
-                        self.user_override = False
+                        self.logger.info(f"User manual activation: {color}")
                 
                 # Stop any existing thread
                 self.stop_event.set()
@@ -116,9 +120,9 @@ class SimpleGPIOController:
                 self.logger.info(f"Activated {color} formula on pin {pin} (cycle: {cycle_time}s, duration: {duration}s)")
                 return True
                 
-            except Exception as e:
-                self.logger.error(f"Error activating formula {color}: {e}")
-                return False
+        except Exception as e:
+            self.logger.error(f"Error activating formula {color}: {e}")
+            return False
     
     def _activation_cycle(self, pin, cycle_time, duration, color, is_scheduled=False, activation_duration=None):
         """Run the activation cycle in a separate thread"""
@@ -126,8 +130,8 @@ class SimpleGPIOController:
             start_time = time.time()
             
             while not self.stop_event.is_set():
-                # Check if scheduled activation should end
-                if is_scheduled and activation_duration and not self.user_override:
+                # Check if scheduled activation should end (only for scheduled activations with duration)
+                if is_scheduled and activation_duration is not None and not self.user_override:
                     if time.time() - start_time >= activation_duration:
                         self.logger.info(f"Scheduled activation of {color} completed after {activation_duration}s")
                         break
@@ -163,13 +167,16 @@ class SimpleGPIOController:
             except:
                 pass
             
-            # Clear schedule state if this was a scheduled activation
+            # Clear schedule state if this was a scheduled activation that completed naturally
             if is_scheduled and not self.user_override:
-                self.active_schedule = None
-                self.schedule_end_time = None
+                with self.lock:
+                    self.active_formula = None
+                    self.active_schedule = None
+                    self.schedule_end_time = None
+                    self.logger.info(f"Scheduled activation of {color} fully completed and cleared")
     
-    def deactivate_all(self):
-        """Deactivate all GPIO pins"""
+    def _deactivate_all_internal(self, clear_user_override=True):
+        """Internal deactivate method without locking (for use within locked contexts)"""
         try:
             # Stop activation thread
             self.stop_event.set()
@@ -183,15 +190,44 @@ class SimpleGPIOController:
                 except Exception as e:
                     self.logger.error(f"Error deactivating pin {pin} for {color}: {e}")
             
-            # Clear all state
+            # Clear state
             self.active_formula = None
             self.active_schedule = None
             self.schedule_end_time = None
-            self.user_override = False
+            if clear_user_override:
+                self.user_override = False
             self.logger.info("All formulas deactivated")
             
         except Exception as e:
             self.logger.error(f"Error deactivating all formulas: {e}")
+
+    def deactivate_all(self):
+        """Deactivate all GPIO pins"""
+        with self.lock:
+            self._deactivate_all_internal()
+    
+    def clear_user_override(self):
+        """Clear user override flag to allow schedules to resume"""
+        with self.lock:
+            self.user_override = False
+            self.logger.info("User override cleared - schedules can resume")
+    
+    def force_schedule_transition(self, new_formula, cycle_time, duration, activation_duration):
+        """Force a transition to a new scheduled formula, clearing any user override"""
+        with self.lock:
+            # Clear user override for session transition
+            if self.user_override:
+                self.logger.info("Forcing schedule transition - clearing user override")
+                self.user_override = False
+            
+            # Activate the new scheduled formula
+            return self.activate_formula(
+                new_formula, 
+                cycle_time, 
+                duration, 
+                is_scheduled=True, 
+                activation_duration=activation_duration
+            )
     
     def get_status(self):
         """Get current activation status"""
