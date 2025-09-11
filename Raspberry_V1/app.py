@@ -157,6 +157,29 @@ def clear_user_override():
         return jsonify({"error": "Internal server error"}), 500
 
 
+@app.route("/api/reload-pin-mapping", methods=["POST"])
+def reload_pin_mapping():
+    """Reload pin mapping from JSON file without restarting the app"""
+    try:
+        # Deactivate all current formulas first
+        gpio_controller.deactivate_all()
+        
+        # Reload pin mapping from file
+        new_pin_mapping = load_pin_mapping()
+        gpio_controller.set_pin_mapping(new_pin_mapping["formulas"])
+        
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Pin mapping reloaded successfully",
+                "pin_mapping": new_pin_mapping["formulas"]
+            }
+        )
+    except Exception as e:
+        app.logger.error(f"Error reloading pin mapping: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
 @app.route("/api/schedule-status", methods=["GET"])
 def get_schedule_status():
     """Get detailed schedule status including next upcoming schedule"""
