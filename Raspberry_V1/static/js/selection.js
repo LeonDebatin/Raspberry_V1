@@ -272,13 +272,44 @@ class SelectionController {
         this.startCycleAnimation();
     }
     
+    startProgressCircleSync(formula, status) {
+        // Start progress circle synchronized with backend timing
+        if (!this.progressContainer) return;
+        
+        // Prevent multiple simultaneous starts
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
+        
+        // Set formula color
+        this.progressContainer.className = `progress-circle-container active formula-${formula}`;
+        
+        // Use backend timing (already set in synchronizeWithBackend)
+        // this.cycleStartTime is already synchronized with backend
+        
+        // Store schedule information
+        this.scheduleStartTime = Date.now();
+        if (status.schedule_end_time) {
+            this.scheduleDuration = Math.max(0, status.schedule_end_time - (Date.now() / 1000));
+        }
+        
+        // Reset arc initialization to ensure it gets recalculated
+        this.arcInitialized = false;
+        
+        // Start cycle animation with synchronized timing
+        this.startCycleAnimation();
+    }
+    
     startCycleAnimation() {
         if (!this.progressIndicator) return;
         
-        // Calculate cycle duration in milliseconds
-        const cycleDurationMs = this.cycleTime * 1000;
+        // If cycleStartTime is not set, set it now (for manual activations)
+        if (!this.cycleStartTime) {
+            this.cycleStartTime = Date.now();
+        }
         
-        // Position the ball on the circle and start rotation
+        // Position the ball on the circle based on current cycle progress
         this.positionIndicatorBall();
         
         // Update cycle progress indicator
@@ -286,22 +317,21 @@ class SelectionController {
     }
     
     positionIndicatorBall() {
-        if (!this.progressIndicator || !this.progressContainer) return;
+        if (!this.progressIndicator || !this.progressContainer || !this.cycleStartTime) return;
         
-        // Get actual container size (responsive)
-        const containerRect = this.progressContainer.getBoundingClientRect();
-        const containerSize = containerRect.width;
-        const radius = 85 * (containerSize / 200); // Scale radius to container
-        const centerX = containerSize / 2;
-        const centerY = containerSize / 2;
+        // Calculate current cycle progress to position ball correctly
+        const now = Date.now();
+        const cycleElapsed = (now - this.cycleStartTime) % (this.cycleTime * 1000);
+        let cycleProgress = cycleElapsed / (this.cycleTime * 1000);
         
-        // Position ball at top of circle initially (12 o'clock position)
-        const ballX = centerX;
-        const ballY = centerY - radius;
+        // Validate and bound the progress
+        if (isNaN(cycleProgress) || !isFinite(cycleProgress)) {
+            cycleProgress = 0;
+        }
+        cycleProgress = Math.max(0, Math.min(1, cycleProgress));
         
-        this.progressIndicator.style.left = `${ballX}px`;
-        this.progressIndicator.style.top = `${ballY}px`;
-        this.progressIndicator.style.transform = 'translate(-50%, -50%)';
+        // Update ball position based on current progress
+        this.updateBallPosition(cycleProgress);
     }
     
     updateCycleProgress() {
@@ -313,9 +343,8 @@ class SelectionController {
         
         // Validate cycleProgress to prevent NaN or invalid values
         if (isNaN(cycleProgress) || !isFinite(cycleProgress)) {
-            console.warn('Invalid cycle progress calculated, resetting cycle start time');
-            this.cycleStartTime = Date.now();
-            cycleProgress = 0;
+            console.warn('Invalid cycle progress calculated, will be corrected on next status update');
+            cycleProgress = 0; // Use 0 instead of resetting time (backend is source of truth)
         }
         
         // Ensure progress is within bounds [0, 1]
@@ -432,7 +461,47 @@ class SelectionController {
     updateProgressFromStatus(status) {
         // Update progress circle based on current status
         if (status.active_formula && status.active_formula !== 'off') {
-            // Only start progress circle if it's not already running for the same formula
+            // Synchronize with backend cycle timing
+            this.synchronizeWithBackend(status);
+        } else {
+            this.stopProgressCircle();
+        }
+    }
+    
+    synchronizeWithBackend(status) {
+        // Use backend as single source of truth for cycle timing
+        if (status.cycle_start_time && status.current_cycle_time && status.current_duration) {
+            // Update local settings to match backend
+            this.cycleTime = status.current_cycle_time;
+            this.duration = status.current_duration;
+            
+            // Calculate backend cycle start time in frontend time
+            const backendCycleStartMs = status.cycle_start_time * 1000; // Convert to milliseconds
+            
+            // Only restart if not already running or if timing is significantly different
+            const needsSync = !this.isActive || 
+                            !this.cycleStartTime ||
+                            Math.abs(this.cycleStartTime - backendCycleStartMs) > 1000 || // More than 1 second difference
+                            this.selectedFormula !== status.active_formula;
+            
+            if (needsSync) {
+                // Set formula state
+                this.selectedFormula = status.active_formula;
+                this.isActive = true;
+                
+                // Synchronize cycle timing with backend
+                this.cycleStartTime = backendCycleStartMs;
+                
+                // Start progress circle with synchronized timing
+                this.startProgressCircleSync(status.active_formula, status);
+                
+                // Update UI elements
+                this.updateFormulaButtons();
+                this.updateConfigButtons();
+                this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active`, true);
+            }
+        } else {
+            // Fallback to old method if backend doesn't provide cycle timing
             const isAlreadyRunning = this.isActive && 
                                    this.selectedFormula === status.active_formula &&
                                    this.progressContainer &&
@@ -442,16 +511,13 @@ class SelectionController {
                 const isScheduled = status.active_schedule === status.active_formula;
                 let scheduleDuration = null;
                 
-                // Calculate remaining schedule duration if scheduled
                 if (isScheduled && status.schedule_end_time) {
-                    const now = Date.now() / 1000; // Convert to seconds
+                    const now = Date.now() / 1000;
                     scheduleDuration = Math.max(0, status.schedule_end_time - now);
                 }
                 
                 this.startProgressCircle(status.active_formula, isScheduled, scheduleDuration);
             }
-        } else {
-            this.stopProgressCircle();
         }
     }
     

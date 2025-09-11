@@ -49,6 +49,11 @@ class SimpleGPIOController:
         self.schedule_end_time = None
         self.user_override = False
         
+        # Cycle timing for frontend synchronization
+        self.cycle_start_time = None
+        self.current_cycle_time = None
+        self.current_duration = None
+        
         # Setup GPIO mode
         if GPIO_AVAILABLE:
             self.gpio.setmode(self.gpio.BCM)
@@ -82,6 +87,11 @@ class SimpleGPIOController:
                 
                 pin = self.pin_mapping[color]
                 self.active_formula = color
+                
+                # Track cycle timing for frontend synchronization
+                self.cycle_start_time = time.time()
+                self.current_cycle_time = cycle_time
+                self.current_duration = duration
                 
                 # Handle schedule vs user activation
                 if is_scheduled:
@@ -196,6 +206,12 @@ class SimpleGPIOController:
             self.schedule_end_time = None
             if clear_user_override:
                 self.user_override = False
+            
+            # Clear cycle timing
+            self.cycle_start_time = None
+            self.current_cycle_time = None
+            self.current_duration = None
+            
             self.logger.info("All formulas deactivated")
             
         except Exception as e:
@@ -237,7 +253,11 @@ class SimpleGPIOController:
             'user_override': self.user_override,
             'schedule_end_time': self.schedule_end_time,
             'pin_mapping': self.pin_mapping,
-            'gpio_available': GPIO_AVAILABLE
+            'gpio_available': GPIO_AVAILABLE,
+            # Cycle timing for frontend synchronization
+            'cycle_start_time': self.cycle_start_time,
+            'current_cycle_time': self.current_cycle_time,
+            'current_duration': self.current_duration
         }
     
     def cleanup(self):
