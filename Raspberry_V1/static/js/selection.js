@@ -34,6 +34,7 @@ class SelectionController {
         this.cycleStartTime = null;
         this.animationFrame = null;
         this.arcInitialized = false;
+        this.lastCycleProgress = 0; // Track for debugging jumps
     }
     
     bindEvents() {
@@ -140,24 +141,24 @@ class SelectionController {
     setCycleTime(time) {
         this.cycleTime = time;
         
-        // If currently active, update progress circle and reactivate with new settings
+        // If currently active, restart the cycle with new settings (ball jumps to start)
         if (this.isActive && this.selectedFormula) {
             // Update the progress circle immediately with new timing
             this.updateProgressCircleTiming();
-            // Reactivate with new settings
-            this.selectFormula(this.selectedFormula);
+            // Reactivate with new settings - this will reset the cycle timing
+            this.reactivateWithNewSettings();
         }
     }
     
     setDuration(time) {
         this.duration = time;
         
-        // If currently active, update progress circle and reactivate with new settings
+        // If currently active, restart the cycle with new settings (ball jumps to start)
         if (this.isActive && this.selectedFormula) {
             // Update the progress circle immediately with new timing
             this.updateProgressCircleTiming();
-            // Reactivate with new settings
-            this.selectFormula(this.selectedFormula);
+            // Reactivate with new settings - this will reset the cycle timing
+            this.reactivateWithNewSettings();
         }
     }
     
@@ -243,8 +244,14 @@ class SelectionController {
     }
     
     // Progress Circle Methods
-    startProgressCircle(formula, isScheduled = false, scheduleDuration = null) {
+    startProgressCircle(formula, isScheduled = false, scheduleDuration = null, preserveCycleTime = false) {
         if (!this.progressContainer) return;
+        
+        // Prevent multiple simultaneous starts
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
         
         // Set formula color
         this.progressContainer.className = `progress-circle-container active formula-${formula}`;
@@ -252,7 +259,14 @@ class SelectionController {
         // Store timing information
         this.scheduleStartTime = Date.now();
         this.scheduleDuration = scheduleDuration;
-        this.cycleStartTime = Date.now();
+        
+        // Only reset cycle start time if not preserving (i.e., for new activations)
+        if (!preserveCycleTime || !this.cycleStartTime) {
+            this.cycleStartTime = Date.now();
+        }
+        
+        // Reset arc initialization to ensure it gets recalculated
+        this.arcInitialized = false;
         
         // Start cycle animation
         this.startCycleAnimation();
@@ -291,11 +305,35 @@ class SelectionController {
     }
     
     updateCycleProgress() {
-        if (!this.progressCycle || !this.isActive) return;
+        if (!this.progressCycle || !this.isActive || !this.cycleStartTime || this.cycleTime <= 0) return;
         
         const now = Date.now();
         const cycleElapsed = (now - this.cycleStartTime) % (this.cycleTime * 1000);
-        const cycleProgress = cycleElapsed / (this.cycleTime * 1000);
+        let cycleProgress = cycleElapsed / (this.cycleTime * 1000);
+        
+        // Validate cycleProgress to prevent NaN or invalid values
+        if (isNaN(cycleProgress) || !isFinite(cycleProgress)) {
+            console.warn('Invalid cycle progress calculated, resetting cycle start time');
+            this.cycleStartTime = Date.now();
+            cycleProgress = 0;
+        }
+        
+        // Ensure progress is within bounds [0, 1]
+        cycleProgress = Math.max(0, Math.min(1, cycleProgress));
+        
+        // Debug: Check for unexpected jumps
+        if (this.lastCycleProgress > 0.8 && cycleProgress < 0.2) {
+            // Normal cycle completion, not a jump
+        } else if (Math.abs(cycleProgress - this.lastCycleProgress) > 0.5 && this.lastCycleProgress > 0) {
+            console.warn('Detected potential ball jump:', {
+                from: this.lastCycleProgress,
+                to: cycleProgress,
+                cycleStartTime: this.cycleStartTime,
+                now: Date.now(),
+                cycleTime: this.cycleTime
+            });
+        }
+        this.lastCycleProgress = cycleProgress;
         
         // Set up the static colored arc (only once, not every frame)
         if (!this.arcInitialized) {
@@ -331,8 +369,18 @@ class SelectionController {
     updateBallPosition(cycleProgress) {
         if (!this.progressIndicator || !this.progressContainer) return;
         
+        // Validate cycleProgress
+        if (isNaN(cycleProgress) || !isFinite(cycleProgress)) {
+            cycleProgress = 0; // Reset to start position if invalid
+        }
+        
         // Get actual container size (responsive)
         const containerRect = this.progressContainer.getBoundingClientRect();
+        if (containerRect.width === 0 || containerRect.height === 0) {
+            // Container not visible, skip update
+            return;
+        }
+        
         const containerSize = containerRect.width;
         const radius = 85 * (containerSize / 200); // Scale radius to container
         const centerX = containerSize / 2;
@@ -344,6 +392,12 @@ class SelectionController {
         // Calculate ball position
         const ballX = centerX + radius * Math.cos(angle);
         const ballY = centerY + radius * Math.sin(angle);
+        
+        // Validate calculated positions
+        if (isNaN(ballX) || isNaN(ballY) || !isFinite(ballX) || !isFinite(ballY)) {
+            console.warn('Invalid ball position calculated, skipping update');
+            return;
+        }
         
         this.progressIndicator.style.left = `${ballX}px`;
         this.progressIndicator.style.top = `${ballY}px`;
@@ -372,21 +426,30 @@ class SelectionController {
         this.scheduleDuration = null;
         this.cycleStartTime = null;
         this.arcInitialized = false;
+        this.lastCycleProgress = 0;
     }
     
     updateProgressFromStatus(status) {
         // Update progress circle based on current status
         if (status.active_formula && status.active_formula !== 'off') {
-            const isScheduled = status.active_schedule === status.active_formula;
-            let scheduleDuration = null;
+            // Only start progress circle if it's not already running for the same formula
+            const isAlreadyRunning = this.isActive && 
+                                   this.selectedFormula === status.active_formula &&
+                                   this.progressContainer &&
+                                   this.progressContainer.classList.contains('active');
             
-            // Calculate remaining schedule duration if scheduled
-            if (isScheduled && status.schedule_end_time) {
-                const now = Date.now() / 1000; // Convert to seconds
-                scheduleDuration = Math.max(0, status.schedule_end_time - now);
+            if (!isAlreadyRunning) {
+                const isScheduled = status.active_schedule === status.active_formula;
+                let scheduleDuration = null;
+                
+                // Calculate remaining schedule duration if scheduled
+                if (isScheduled && status.schedule_end_time) {
+                    const now = Date.now() / 1000; // Convert to seconds
+                    scheduleDuration = Math.max(0, status.schedule_end_time - now);
+                }
+                
+                this.startProgressCircle(status.active_formula, isScheduled, scheduleDuration);
             }
-            
-            this.startProgressCircle(status.active_formula, isScheduled, scheduleDuration);
         } else {
             this.stopProgressCircle();
         }
@@ -405,6 +468,31 @@ class SelectionController {
                     this.setupStaticArc();
                 }
             }
+        }
+    }
+    
+
+    
+    async reactivateWithNewSettings() {
+        // Reactivate the formula with new settings and reset cycle timing (ball jumps to start)
+        try {
+            this.updateStatus('Updating...', true);
+            
+            const response = await window.api.post('/api/activate', {
+                color: this.selectedFormula,
+                cycle_time: this.cycleTime,
+                duration: this.duration
+            });
+            
+            // Restart progress circle with fresh cycle timing (ball starts from top)
+            this.startProgressCircle(this.selectedFormula, false, null, false); // preserveCycleTime = false
+            
+            this.updateStatus(`${getFormulaDisplayName(this.selectedFormula)} Active`, true);
+            
+        } catch (error) {
+            console.error('Error reactivating formula:', error);
+            // Fall back to regular selectFormula if API call fails
+            this.selectFormula(this.selectedFormula);
         }
     }
 }
@@ -536,6 +624,18 @@ class KeyboardShortcuts {
             }
         });
     }
+}
+
+// Helper function to get display names for formulas
+function getFormulaDisplayName(color) {
+    const displayNames = {
+        'red': 'Crimson',
+        'blue': 'Azure', 
+        'yellow': 'Amber',
+        'green': 'Sage',
+        'off': 'Off'
+    };
+    return displayNames[color] || color.charAt(0).toUpperCase() + color.slice(1);
 }
 
 // Initialize when DOM is loaded
