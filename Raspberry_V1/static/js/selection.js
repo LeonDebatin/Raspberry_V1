@@ -208,17 +208,13 @@ class SelectionController {
         try {
             const status = await window.api.get('/api/status');
             
-            if (status.active_formula) {
-                this.selectedFormula = status.active_formula;
-                this.isActive = true;
-                this.updateFormulaButtons();
-                this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active`, true);
-                
-                // Update progress circle based on status
-                this.updateProgressFromStatus(status);
+            if (status.active_formula && status.active_formula !== 'off') {
+                // Always synchronize with backend - this is the single source of truth
+                this.synchronizeWithBackend(status);
             } else {
                 this.selectedFormula = null;
                 this.isActive = false;
+                this.updateFormulaButtons();
                 this.updateStatus('Ready', false);
                 
                 // Stop progress circle
@@ -276,29 +272,34 @@ class SelectionController {
         // Start progress circle synchronized with backend timing
         if (!this.progressContainer) return;
         
-        // Prevent multiple simultaneous starts
-        if (this.animationFrame) {
-            cancelAnimationFrame(this.animationFrame);
-            this.animationFrame = null;
+        // Only cancel existing animation if we're switching formulas or not already running
+        const isNewFormula = !this.progressContainer.classList.contains(`formula-${formula}`);
+        const isNotRunning = !this.animationFrame;
+        
+        if (isNewFormula || isNotRunning) {
+            // Cancel existing animation only if needed
+            if (this.animationFrame) {
+                cancelAnimationFrame(this.animationFrame);
+                this.animationFrame = null;
+            }
+            
+            // Set formula color
+            this.progressContainer.className = `progress-circle-container active formula-${formula}`;
+            
+            // Reset arc initialization to ensure it gets recalculated for new formula
+            this.arcInitialized = false;
         }
         
-        // Set formula color
-        this.progressContainer.className = `progress-circle-container active formula-${formula}`;
-        
-        // Use backend timing (already set in synchronizeWithBackend)
-        // this.cycleStartTime is already synchronized with backend
-        
-        // Store schedule information
+        // Store schedule information (always update this)
         this.scheduleStartTime = Date.now();
         if (status.schedule_end_time) {
             this.scheduleDuration = Math.max(0, status.schedule_end_time - (Date.now() / 1000));
         }
         
-        // Reset arc initialization to ensure it gets recalculated
-        this.arcInitialized = false;
-        
-        // Start cycle animation with synchronized timing
-        this.startCycleAnimation();
+        // Start or continue cycle animation with synchronized timing
+        if (!this.animationFrame) {
+            this.startCycleAnimation();
+        }
     }
     
     startCycleAnimation() {
@@ -478,29 +479,36 @@ class SelectionController {
             // Calculate backend cycle start time in frontend time
             const backendCycleStartMs = status.cycle_start_time * 1000; // Convert to milliseconds
             
-            // Only restart if not already running or if timing is significantly different
-            const needsSync = !this.isActive || 
-                            !this.cycleStartTime ||
-                            Math.abs(this.cycleStartTime - backendCycleStartMs) > 1000 || // More than 1 second difference
-                            this.selectedFormula !== status.active_formula;
+            // Calculate current cycle progress for debugging
+            const now = Date.now();
+            const cycleElapsed = (now - backendCycleStartMs) % (this.cycleTime * 1000);
+            const cycleProgress = cycleElapsed / (this.cycleTime * 1000);
             
-            if (needsSync) {
-                // Set formula state
-                this.selectedFormula = status.active_formula;
-                this.isActive = true;
-                
-                // Synchronize cycle timing with backend
-                this.cycleStartTime = backendCycleStartMs;
-                
-                // Start progress circle with synchronized timing
-                this.startProgressCircleSync(status.active_formula, status);
-                
-                // Update UI elements
-                this.updateFormulaButtons();
-                this.updateConfigButtons();
-                this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active`, true);
-            }
+            console.log('🔄 Synchronizing with backend:', {
+                formula: status.active_formula,
+                backendCycleStart: new Date(backendCycleStartMs).toLocaleTimeString(),
+                currentProgress: Math.round(cycleProgress * 100) + '%',
+                cycleTime: this.cycleTime,
+                duration: this.duration
+            });
+            
+            // Always synchronize with backend timing (single source of truth)
+            // Set formula state
+            this.selectedFormula = status.active_formula;
+            this.isActive = true;
+            
+            // Always use backend cycle timing - this is the single source of truth
+            this.cycleStartTime = backendCycleStartMs;
+            
+            // Start or update progress circle with synchronized timing
+            this.startProgressCircleSync(status.active_formula, status);
+            
+            // Update UI elements
+            this.updateFormulaButtons();
+            this.updateConfigButtons();
+            this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active`, true);
         } else {
+            console.log('⚠️ Backend cycle timing not available, using fallback method');
             // Fallback to old method if backend doesn't provide cycle timing
             const isAlreadyRunning = this.isActive && 
                                    this.selectedFormula === status.active_formula &&
