@@ -12,6 +12,7 @@ class SelectionController {
         
         this.initializeElements();
         this.bindEvents();
+        this.updateConfigButtons(); // Set initial button states
         this.loadStatus();
     }
     
@@ -21,6 +22,18 @@ class SelectionController {
         this.configBtns = document.querySelectorAll('.config-btn');
         this.statusText = document.getElementById('status-text');
         this.statusDot = document.getElementById('status-dot');
+        
+        // Progress circle elements
+        this.progressContainer = document.getElementById('progress-circle-container');
+        this.progressCycle = document.getElementById('progress-cycle');
+        this.progressIndicator = document.getElementById('progress-indicator');
+        
+        // Progress circle state
+        this.scheduleStartTime = null;
+        this.scheduleDuration = null;
+        this.cycleStartTime = null;
+        this.animationFrame = null;
+        this.arcInitialized = false;
     }
     
     bindEvents() {
@@ -74,6 +87,9 @@ class SelectionController {
             this.updateFormulaButtons();
             this.updateStatus(`${getFormulaDisplayName(color)} Active`, true);
             
+            // Start progress circle for manual activation
+            this.startProgressCircle(color, false);
+            
             window.notifications.success(
                 `${getFormulaDisplayName(color)} formula activated (${this.cycleTime}s cycle, ${this.duration}s duration)`
             );
@@ -103,6 +119,9 @@ class SelectionController {
             this.updateFormulaButtons();
             this.updateStatus('Ready', false);
             
+            // Stop progress circle
+            this.stopProgressCircle();
+            
             window.notifications.success('All formulas deactivated');
             
         } catch (error) {
@@ -121,8 +140,11 @@ class SelectionController {
     setCycleTime(time) {
         this.cycleTime = time;
         
-        // If currently active, reactivate with new settings
+        // If currently active, update progress circle and reactivate with new settings
         if (this.isActive && this.selectedFormula) {
+            // Update the progress circle immediately with new timing
+            this.updateProgressCircleTiming();
+            // Reactivate with new settings
             this.selectFormula(this.selectedFormula);
         }
     }
@@ -130,8 +152,11 @@ class SelectionController {
     setDuration(time) {
         this.duration = time;
         
-        // If currently active, reactivate with new settings
+        // If currently active, update progress circle and reactivate with new settings
         if (this.isActive && this.selectedFormula) {
+            // Update the progress circle immediately with new timing
+            this.updateProgressCircleTiming();
+            // Reactivate with new settings
             this.selectFormula(this.selectedFormula);
         }
     }
@@ -187,8 +212,16 @@ class SelectionController {
                 this.isActive = true;
                 this.updateFormulaButtons();
                 this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active`, true);
+                
+                // Update progress circle based on status
+                this.updateProgressFromStatus(status);
             } else {
+                this.selectedFormula = null;
+                this.isActive = false;
                 this.updateStatus('Ready', false);
+                
+                // Stop progress circle
+                this.stopProgressCircle();
             }
             
         } catch (error) {
@@ -207,6 +240,172 @@ class SelectionController {
         setInterval(() => {
             this.loadStatus();
         }, 30000);
+    }
+    
+    // Progress Circle Methods
+    startProgressCircle(formula, isScheduled = false, scheduleDuration = null) {
+        if (!this.progressContainer) return;
+        
+        // Set formula color
+        this.progressContainer.className = `progress-circle-container active formula-${formula}`;
+        
+        // Store timing information
+        this.scheduleStartTime = Date.now();
+        this.scheduleDuration = scheduleDuration;
+        this.cycleStartTime = Date.now();
+        
+        // Start cycle animation
+        this.startCycleAnimation();
+    }
+    
+    startCycleAnimation() {
+        if (!this.progressIndicator) return;
+        
+        // Calculate cycle duration in milliseconds
+        const cycleDurationMs = this.cycleTime * 1000;
+        
+        // Position the ball on the circle and start rotation
+        this.positionIndicatorBall();
+        
+        // Update cycle progress indicator
+        this.updateCycleProgress();
+    }
+    
+    positionIndicatorBall() {
+        if (!this.progressIndicator || !this.progressContainer) return;
+        
+        // Get actual container size (responsive)
+        const containerRect = this.progressContainer.getBoundingClientRect();
+        const containerSize = containerRect.width;
+        const radius = 85 * (containerSize / 200); // Scale radius to container
+        const centerX = containerSize / 2;
+        const centerY = containerSize / 2;
+        
+        // Position ball at top of circle initially (12 o'clock position)
+        const ballX = centerX;
+        const ballY = centerY - radius;
+        
+        this.progressIndicator.style.left = `${ballX}px`;
+        this.progressIndicator.style.top = `${ballY}px`;
+        this.progressIndicator.style.transform = 'translate(-50%, -50%)';
+    }
+    
+    updateCycleProgress() {
+        if (!this.progressCycle || !this.isActive) return;
+        
+        const now = Date.now();
+        const cycleElapsed = (now - this.cycleStartTime) % (this.cycleTime * 1000);
+        const cycleProgress = cycleElapsed / (this.cycleTime * 1000);
+        
+        // Set up the static colored arc (only once, not every frame)
+        if (!this.arcInitialized) {
+            this.setupStaticArc();
+            this.arcInitialized = true;
+        }
+        
+        // Only update ball position (arc stays static)
+        this.updateBallPosition(cycleProgress);
+        
+        // Continue animation
+        if (this.isActive) {
+            this.animationFrame = requestAnimationFrame(() => this.updateCycleProgress());
+        }
+    }
+    
+    setupStaticArc() {
+        if (!this.progressCycle) return;
+        
+        // Calculate the active portion of the cycle (duration/cycle_time)
+        const activePortion = this.duration / this.cycleTime;
+        const circumference = 534.07; // 2 * π * 85
+        
+        // Calculate how much of the circle should be colored (active portion only)
+        const activeArcLength = circumference * activePortion;
+        const inactiveArcLength = circumference - activeArcLength;
+        
+        // Set the dash array to show only the active portion in color (static at top)
+        this.progressCycle.style.strokeDasharray = `${activeArcLength} ${inactiveArcLength}`;
+        this.progressCycle.style.strokeDashoffset = '0'; // Keep at top, no rotation
+    }
+    
+    updateBallPosition(cycleProgress) {
+        if (!this.progressIndicator || !this.progressContainer) return;
+        
+        // Get actual container size (responsive)
+        const containerRect = this.progressContainer.getBoundingClientRect();
+        const containerSize = containerRect.width;
+        const radius = 85 * (containerSize / 200); // Scale radius to container
+        const centerX = containerSize / 2;
+        const centerY = containerSize / 2;
+        
+        // Calculate angle (starting from top, going clockwise)
+        const angle = (cycleProgress * 2 * Math.PI) - (Math.PI / 2); // -π/2 to start from top
+        
+        // Calculate ball position
+        const ballX = centerX + radius * Math.cos(angle);
+        const ballY = centerY + radius * Math.sin(angle);
+        
+        this.progressIndicator.style.left = `${ballX}px`;
+        this.progressIndicator.style.top = `${ballY}px`;
+    }
+    
+    stopProgressCircle() {
+        if (!this.progressContainer) return;
+        
+        // Hide progress circle
+        this.progressContainer.className = 'progress-circle-container';
+        
+        // Cancel animation frame
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
+        
+        // Reset progress cycle
+        if (this.progressCycle) {
+            this.progressCycle.style.strokeDasharray = '0 534.07';
+            this.progressCycle.style.strokeDashoffset = '0';
+        }
+        
+        // Clear timing data and flags
+        this.scheduleStartTime = null;
+        this.scheduleDuration = null;
+        this.cycleStartTime = null;
+        this.arcInitialized = false;
+    }
+    
+    updateProgressFromStatus(status) {
+        // Update progress circle based on current status
+        if (status.active_formula && status.active_formula !== 'off') {
+            const isScheduled = status.active_schedule === status.active_formula;
+            let scheduleDuration = null;
+            
+            // Calculate remaining schedule duration if scheduled
+            if (isScheduled && status.schedule_end_time) {
+                const now = Date.now() / 1000; // Convert to seconds
+                scheduleDuration = Math.max(0, status.schedule_end_time - now);
+            }
+            
+            this.startProgressCircle(status.active_formula, isScheduled, scheduleDuration);
+        } else {
+            this.stopProgressCircle();
+        }
+    }
+    
+    updateProgressCircleTiming() {
+        // Force update of the progress circle with new timing settings
+        if (this.isActive && this.progressContainer) {
+            // Reset the arc initialization to force recalculation
+            this.arcInitialized = false;
+            
+            // If the progress circle is currently active, update it immediately
+            if (this.progressContainer.classList.contains('active')) {
+                // Trigger a setupStaticArc call on next animation frame
+                if (this.progressCycle) {
+                    this.setupStaticArc();
+                }
+            }
+        }
     }
 }
 

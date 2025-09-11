@@ -163,40 +163,45 @@ def get_schedule_status():
     try:
         schedules_data = load_schedules()
         current_time = datetime.now().strftime("%H:%M")
-        
+
         # Find currently active schedule
         active_schedule = find_active_schedule_for_time(schedules_data, current_time)
-        
+
         # Find next upcoming schedule
         next_schedule = None
         current_datetime = datetime.now()
-        
+
         for schedule in schedules_data.get("schedules", []):
-            if (schedule.get("enabled") and 
-                should_activate_schedule(schedule) and
-                schedule.get("start_time")):
-                
+            if (
+                schedule.get("enabled")
+                and should_activate_schedule(schedule)
+                and schedule.get("start_time")
+            ):
+
                 # Parse start time for today
                 start_time = datetime.strptime(schedule["start_time"], "%H:%M").time()
                 start_datetime = datetime.combine(current_datetime.date(), start_time)
-                
+
                 # If start time has passed today, check tomorrow
                 if start_datetime <= current_datetime:
                     start_datetime += timedelta(days=1)
-                
+
                 if not next_schedule or start_datetime < next_schedule["datetime"]:
-                    next_schedule = {
-                        "schedule": schedule,
-                        "datetime": start_datetime
-                    }
-        
-        return jsonify({
-            "current_time": current_time,
-            "active_schedule": active_schedule,
-            "next_schedule": next_schedule["schedule"] if next_schedule else None,
-            "next_schedule_time": next_schedule["datetime"].strftime("%H:%M") if next_schedule else None,
-            "gpio_status": gpio_controller.get_status()
-        })
+                    next_schedule = {"schedule": schedule, "datetime": start_datetime}
+
+        return jsonify(
+            {
+                "current_time": current_time,
+                "active_schedule": active_schedule,
+                "next_schedule": next_schedule["schedule"] if next_schedule else None,
+                "next_schedule_time": (
+                    next_schedule["datetime"].strftime("%H:%M")
+                    if next_schedule
+                    else None
+                ),
+                "gpio_status": gpio_controller.get_status(),
+            }
+        )
     except Exception as e:
         app.logger.error(f"Error getting schedule status: {e}")
         return jsonify({"error": "Internal server error"}), 500
@@ -218,12 +223,12 @@ def create_schedule():
     """Create new scheduled item"""
     try:
         data = request.get_json()
-        
+
         # Validate schedule data
         validation_error = validate_schedule_data(data)
         if validation_error:
             return jsonify({"error": validation_error}), 400
-        
+
         schedules_data = load_schedules()
 
         # Create new schedule object
@@ -240,22 +245,31 @@ def create_schedule():
         }
 
         # Check for overlapping schedules
-        overlapping = find_overlapping_schedules(new_schedule, schedules_data["schedules"])
+        overlapping = find_overlapping_schedules(
+            new_schedule, schedules_data["schedules"]
+        )
         if overlapping:
             overlap_details = []
             for schedule in overlapping:
-                overlap_details.append({
-                    "id": schedule["id"],
-                    "formula": schedule["formula"],
-                    "time_range": f"{schedule['start_time']}-{schedule['end_time']}",
-                    "recurrence": schedule["recurrence"]
-                })
-            
-            return jsonify({
-                "error": "Schedule overlaps with existing schedules",
-                "overlapping_schedules": overlap_details,
-                "message": "Please choose a different time slot or disable the conflicting schedules."
-            }), 409  # 409 Conflict
+                overlap_details.append(
+                    {
+                        "id": schedule["id"],
+                        "formula": schedule["formula"],
+                        "time_range": f"{schedule['start_time']}-{schedule['end_time']}",
+                        "recurrence": schedule["recurrence"],
+                    }
+                )
+
+            return (
+                jsonify(
+                    {
+                        "error": "Schedule overlaps with existing schedules",
+                        "overlapping_schedules": overlap_details,
+                        "message": "Please choose a different time slot or disable the conflicting schedules.",
+                    }
+                ),
+                409,
+            )  # 409 Conflict
 
         # Add the new schedule
         schedules_data["schedules"].append(new_schedule)
@@ -283,7 +297,7 @@ def update_schedule(schedule_id):
             if schedule.get("id") == schedule_id:
                 target_schedule = schedule
                 break
-        
+
         if not target_schedule:
             return jsonify({"error": "Schedule not found"}), 404
 
@@ -294,7 +308,9 @@ def update_schedule(schedule_id):
             "formula": data.get("formula", target_schedule.get("formula")),
             "cycle_time": data.get("cycle_time", target_schedule.get("cycle_time", 60)),
             "duration": data.get("duration", target_schedule.get("duration", 10)),
-            "recurrence": data.get("recurrence", target_schedule.get("recurrence", "daily")),
+            "recurrence": data.get(
+                "recurrence", target_schedule.get("recurrence", "daily")
+            ),
             "enabled": data.get("enabled", target_schedule.get("enabled", True)),
         }
 
@@ -304,22 +320,31 @@ def update_schedule(schedule_id):
             return jsonify({"error": validation_error}), 400
 
         # Check for overlapping schedules (excluding the current schedule)
-        overlapping = find_overlapping_schedules(updated_schedule, schedules_data["schedules"], exclude_id=schedule_id)
+        overlapping = find_overlapping_schedules(
+            updated_schedule, schedules_data["schedules"], exclude_id=schedule_id
+        )
         if overlapping:
             overlap_details = []
             for schedule in overlapping:
-                overlap_details.append({
-                    "id": schedule["id"],
-                    "formula": schedule["formula"],
-                    "time_range": f"{schedule['start_time']}-{schedule['end_time']}",
-                    "recurrence": schedule["recurrence"]
-                })
-            
-            return jsonify({
-                "error": "Updated schedule would overlap with existing schedules",
-                "overlapping_schedules": overlap_details,
-                "message": "Please choose a different time slot or disable the conflicting schedules."
-            }), 409  # 409 Conflict
+                overlap_details.append(
+                    {
+                        "id": schedule["id"],
+                        "formula": schedule["formula"],
+                        "time_range": f"{schedule['start_time']}-{schedule['end_time']}",
+                        "recurrence": schedule["recurrence"],
+                    }
+                )
+
+            return (
+                jsonify(
+                    {
+                        "error": "Updated schedule would overlap with existing schedules",
+                        "overlapping_schedules": overlap_details,
+                        "message": "Please choose a different time slot or disable the conflicting schedules.",
+                    }
+                ),
+                409,
+            )  # 409 Conflict
 
         # Update the schedule
         target_schedule.update(updated_schedule)
@@ -339,14 +364,14 @@ def check_schedule_overlap():
     """Check if a schedule would overlap with existing schedules without creating it"""
     try:
         data = request.get_json()
-        
+
         # Validate schedule data
         validation_error = validate_schedule_data(data)
         if validation_error:
             return jsonify({"error": validation_error, "valid": False}), 400
-        
+
         schedules_data = load_schedules()
-        
+
         # Create temporary schedule object for overlap checking
         temp_schedule = {
             "start_time": data.get("start_time"),
@@ -355,33 +380,41 @@ def check_schedule_overlap():
             "recurrence": data.get("recurrence", "daily"),
             "enabled": True,
         }
-        
+
         # Check for overlaps (exclude schedule if editing)
         exclude_id = data.get("exclude_id")  # For edit operations
-        overlapping = find_overlapping_schedules(temp_schedule, schedules_data["schedules"], exclude_id=exclude_id)
-        
+        overlapping = find_overlapping_schedules(
+            temp_schedule, schedules_data["schedules"], exclude_id=exclude_id
+        )
+
         if overlapping:
             overlap_details = []
             for schedule in overlapping:
-                overlap_details.append({
-                    "id": schedule["id"],
-                    "formula": schedule["formula"],
-                    "time_range": f"{schedule['start_time']}-{schedule['end_time']}",
-                    "recurrence": schedule["recurrence"]
-                })
-            
-            return jsonify({
-                "valid": False,
-                "has_overlap": True,
-                "overlapping_schedules": overlap_details,
-                "message": "This schedule would overlap with existing schedules."
-            })
+                overlap_details.append(
+                    {
+                        "id": schedule["id"],
+                        "formula": schedule["formula"],
+                        "time_range": f"{schedule['start_time']}-{schedule['end_time']}",
+                        "recurrence": schedule["recurrence"],
+                    }
+                )
+
+            return jsonify(
+                {
+                    "valid": False,
+                    "has_overlap": True,
+                    "overlapping_schedules": overlap_details,
+                    "message": "This schedule would overlap with existing schedules.",
+                }
+            )
         else:
-            return jsonify({
-                "valid": True,
-                "has_overlap": False,
-                "message": "No overlaps detected. Schedule can be created."
-            })
+            return jsonify(
+                {
+                    "valid": True,
+                    "has_overlap": False,
+                    "message": "No overlaps detected. Schedule can be created.",
+                }
+            )
 
     except Exception as e:
         app.logger.error(f"Error checking schedule overlap: {e}")
@@ -469,22 +502,34 @@ def calculate_schedule_duration(start_time, end_time):
 def schedules_overlap(schedule1, schedule2):
     """Check if two schedules have overlapping time ranges on the same days"""
     # Check if they share any recurrence days
-    if not recurrence_patterns_overlap(schedule1.get("recurrence"), schedule2.get("recurrence")):
+    if not recurrence_patterns_overlap(
+        schedule1.get("recurrence"), schedule2.get("recurrence")
+    ):
         return False
-    
+
     # Check if time ranges overlap
     return time_ranges_overlap(
-        schedule1.get("start_time"), schedule1.get("end_time"),
-        schedule2.get("start_time"), schedule2.get("end_time")
+        schedule1.get("start_time"),
+        schedule1.get("end_time"),
+        schedule2.get("start_time"),
+        schedule2.get("end_time"),
     )
 
 
 def recurrence_patterns_overlap(recurrence1, recurrence2):
     """Check if two recurrence patterns have overlapping days"""
-    days_of_week = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    days_of_week = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
     weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday"]
     weekends = ["saturday", "sunday"]
-    
+
     def get_active_days(recurrence):
         if recurrence == "daily":
             return set(days_of_week)
@@ -496,10 +541,10 @@ def recurrence_patterns_overlap(recurrence1, recurrence2):
             return {recurrence}
         else:
             return set()
-    
+
     days1 = get_active_days(recurrence1)
     days2 = get_active_days(recurrence2)
-    
+
     return bool(days1.intersection(days2))
 
 
@@ -511,27 +556,36 @@ def time_ranges_overlap(start1, end1, start2, end2):
         e1 = datetime.strptime(end1, "%H:%M").time()
         s2 = datetime.strptime(start2, "%H:%M").time()
         e2 = datetime.strptime(end2, "%H:%M").time()
-        
+
         # Convert to minutes since midnight for easier comparison
         def time_to_minutes(t):
             return t.hour * 60 + t.minute
-        
+
         s1_min = time_to_minutes(s1)
         e1_min = time_to_minutes(e1)
         s2_min = time_to_minutes(s2)
         e2_min = time_to_minutes(e2)
-        
+
         # Handle overnight schedules
         is_overnight_1 = e1_min <= s1_min
         is_overnight_2 = e2_min <= s2_min
-        
+
         if is_overnight_1 and is_overnight_2:
             # Both are overnight - they overlap if either overlaps with the other
             # Check if range1 overlaps with range2's late part (start2 to midnight)
-            overlap_late = s1_min <= (24 * 60) and s2_min <= (24 * 60) and s1_min < (24 * 60) and s2_min < e1_min + (24 * 60)
+            overlap_late = (
+                s1_min <= (24 * 60)
+                and s2_min <= (24 * 60)
+                and s1_min < (24 * 60)
+                and s2_min < e1_min + (24 * 60)
+            )
             # Check if range1 overlaps with range2's early part (midnight to end2)
             overlap_early = (s1_min + 24 * 60) < e2_min and s2_min < (e1_min + 24 * 60)
-            return overlap_late or overlap_early or (s1_min < e2_min and s2_min < e1_min + 24 * 60)
+            return (
+                overlap_late
+                or overlap_early
+                or (s1_min < e2_min and s2_min < e1_min + 24 * 60)
+            )
         elif is_overnight_1:
             # Only schedule 1 is overnight
             # Check overlap with late part (s1 to midnight) and early part (midnight to e1)
@@ -543,7 +597,7 @@ def time_ranges_overlap(start1, end1, start2, end2):
         else:
             # Neither is overnight - standard overlap check
             return s1_min < e2_min and s2_min < e1_min
-        
+
     except Exception as e:
         app.logger.error(f"Error checking time range overlap: {e}")
         return True  # Assume overlap on error to be safe
@@ -552,20 +606,20 @@ def time_ranges_overlap(start1, end1, start2, end2):
 def find_overlapping_schedules(new_schedule, existing_schedules, exclude_id=None):
     """Find all existing schedules that would overlap with the new schedule"""
     overlapping = []
-    
+
     for schedule in existing_schedules:
         # Skip the schedule being updated (for edit operations)
         if exclude_id and schedule.get("id") == exclude_id:
             continue
-            
+
         # Skip disabled schedules
         if not schedule.get("enabled"):
             continue
-            
+
         # Check for overlap
         if schedules_overlap(new_schedule, schedule):
             overlapping.append(schedule)
-    
+
     return overlapping
 
 
@@ -576,7 +630,7 @@ def validate_schedule_data(data):
     for field in required_fields:
         if not data.get(field):
             return f"Missing required field: {field}"
-    
+
     # Validate and normalize time format
     def normalize_time(time_str):
         """Convert time string to HH:MM format"""
@@ -594,44 +648,55 @@ def validate_schedule_data(data):
                     raise ValueError("Invalid format")
             except ValueError:
                 return None
-    
+
     normalized_start = normalize_time(data["start_time"])
     normalized_end = normalize_time(data["end_time"])
-    
+
     if not normalized_start or not normalized_end:
         return "Invalid time format. Use HH:MM or H:MM format (e.g., 09:00 or 9:00)."
-    
+
     # Update data with normalized times
     data["start_time"] = normalized_start
     data["end_time"] = normalized_end
-    
+
     # Check if start and end times are the same
     if data["start_time"] == data["end_time"]:
         return "Start time and end time cannot be the same."
-    
+
     # Validate formula
     valid_formulas = ["red", "blue", "yellow", "green"]
     if data["formula"] not in valid_formulas:
         return f"Invalid formula. Must be one of: {', '.join(valid_formulas)}"
-    
+
     # Validate recurrence
-    valid_recurrences = ["daily", "weekdays", "weekends", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    valid_recurrences = [
+        "daily",
+        "weekdays",
+        "weekends",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    ]
     if data["recurrence"] not in valid_recurrences:
         return f"Invalid recurrence. Must be one of: {', '.join(valid_recurrences)}"
-    
+
     # Validate cycle_time and duration
     cycle_time = data.get("cycle_time", 60)
     duration = data.get("duration", 10)
-    
+
     if not isinstance(cycle_time, int) or cycle_time < 5:
         return "Cycle time must be an integer >= 5 seconds."
-    
+
     if not isinstance(duration, int) or duration < 1:
         return "Duration must be an integer >= 1 second."
-    
+
     if duration >= cycle_time:
         return "Duration must be less than cycle time."
-    
+
     return None  # No errors
 
 
@@ -641,6 +706,7 @@ def wait_for_next_minute():
     # Calculate seconds until next minute
     seconds_to_wait = 60 - now.second - (now.microsecond / 1000000.0)
     time.sleep(seconds_to_wait)
+
 
 def find_active_schedule_for_time(schedules_data, current_time):
     """Find which schedule should be active at the given time"""
@@ -652,9 +718,12 @@ def find_active_schedule_for_time(schedules_data, current_time):
             and schedule.get("end_time")
             and schedule.get("start_time") != schedule.get("end_time")
         ):
-            if is_time_in_range(current_time, schedule["start_time"], schedule["end_time"]):
+            if is_time_in_range(
+                current_time, schedule["start_time"], schedule["end_time"]
+            ):
                 return schedule
     return None
+
 
 def schedule_monitor():
     """Background thread to monitor scheduled activation times - checks at exact minute changes"""
@@ -668,33 +737,37 @@ def schedule_monitor():
         try:
             schedules_data = load_schedules()
             current_time = datetime.now().strftime("%H:%M")
-            
+
             # Find which schedule should be active right now
-            target_schedule = find_active_schedule_for_time(schedules_data, current_time)
-            
+            target_schedule = find_active_schedule_for_time(
+                schedules_data, current_time
+            )
+
             # Determine what action to take
             if target_schedule:
                 schedule_id = target_schedule.get("id")
                 target_formula = target_schedule.get("formula")
-                
+
                 # Check if this is a new schedule starting
                 is_new_schedule = (
-                    schedule_id not in active_schedules or 
-                    last_active_schedule != target_schedule.get("formula")
+                    schedule_id not in active_schedules
+                    or last_active_schedule != target_schedule.get("formula")
                 )
-                
+
                 if is_new_schedule:
                     # Calculate how long this schedule should run
                     schedule_duration = calculate_schedule_duration(
                         target_schedule["start_time"], target_schedule["end_time"]
                     )
-                    
+
                     # NEW LOGIC: Start new schedule even if user override is active
                     # This handles session transitions automatically
                     if gpio_controller.user_override:
-                        app.logger.info(f"New schedule session starting - clearing user override for transition")
+                        app.logger.info(
+                            f"New schedule session starting - clearing user override for transition"
+                        )
                         gpio_controller.user_override = False
-                    
+
                     success = gpio_controller.activate_formula(
                         target_formula,
                         target_schedule.get("cycle_time", 60),
@@ -710,29 +783,34 @@ def schedule_monitor():
                             f"Started scheduled formula: {target_formula} ({target_schedule['start_time']}-{target_schedule['end_time']}) for {schedule_duration}s"
                         )
                     else:
-                        app.logger.error(f"Failed to start scheduled formula: {target_formula}")
-                
+                        app.logger.error(
+                            f"Failed to start scheduled formula: {target_formula}"
+                        )
+
                 # If schedule is already running, just update tracking
                 elif schedule_id not in active_schedules:
                     active_schedules[schedule_id] = target_schedule
-                    
+
             else:
                 # No schedule should be active - check if we need to stop anything
                 schedules_to_remove = []
-                
+
                 for schedule_id, schedule in active_schedules.items():
                     # This schedule is no longer in its time window
-                    if gpio_controller.active_schedule == schedule["formula"] and not gpio_controller.user_override:
+                    if (
+                        gpio_controller.active_schedule == schedule["formula"]
+                        and not gpio_controller.user_override
+                    ):
                         gpio_controller.deactivate_all()
                         app.logger.info(
                             f"Ended scheduled formula: {schedule['formula']} ({schedule['start_time']}-{schedule['end_time']})"
                         )
                     schedules_to_remove.append(schedule_id)
-                
+
                 # Clean up inactive schedules
                 for schedule_id in schedules_to_remove:
                     del active_schedules[schedule_id]
-                
+
                 last_active_schedule = None
 
         except Exception as e:
@@ -748,6 +826,6 @@ schedule_thread.start()
 
 if __name__ == "__main__":
     try:
-        app.run(host="0.0.0.0", port=5000, debug=True)
+        app.run(host="0.0.0.0", port=5001, debug=True)
     finally:
         gpio_controller.cleanup()

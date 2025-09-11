@@ -178,6 +178,107 @@ body {
     align-items: center;
     padding: 3rem;
     min-height: 400px;
+    position: relative;
+}
+
+/* Progress Circle Container */
+.progress-circle-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 380px;
+    height: 380px;
+    z-index: 1;
+    pointer-events: none; /* Allow clicks to pass through to buttons */
+}
+
+/* Progress Circle SVG */
+.progress-circle {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg); /* Start from top */
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Background circle - always visible grey */
+.progress-bg {
+    fill: none;
+    stroke: var(--medium-gray);
+    stroke-width: 8;
+    opacity: 0.6;
+}
+
+/* Cycle progress indicator - only duration portion colored */
+.progress-cycle {
+    fill: none;
+    stroke: var(--matte-blue); /* Will be overridden by formula color */
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 0 534.07; /* Will be set by JavaScript */
+    stroke-dashoffset: 0;
+    opacity: 0;
+    animation: none;
+}
+
+/* Moving indicator ball - separate HTML element for highest z-index */
+.progress-indicator {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--charcoal);
+    border: 2px solid var(--primary-white);
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    z-index: 10; /* Higher than everything else */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+}
+
+/* Show progress elements when active */
+.progress-circle-container.active .progress-bg {
+    opacity: 0.6; /* Always show grey background */
+}
+
+.progress-circle-container.active .progress-cycle,
+.progress-circle-container.active .progress-indicator {
+    opacity: 1;
+}
+
+/* Removed cycle-rotation animation - ball is now positioned via JavaScript */
+
+/* Subtle glow animation for active state */
+@keyframes progress-glow {
+    0%, 100% {
+        filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.2));
+    }
+    50% {
+        filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.3));
+    }
+}
+
+.progress-circle-container.active .progress-circle {
+    animation: progress-glow 3s infinite;
+}
+
+/* Color variants for different formulas - only cycle progress */
+.progress-circle-container.formula-red .progress-cycle {
+    stroke: var(--matte-red);
+}
+
+.progress-circle-container.formula-blue .progress-cycle {
+    stroke: var(--matte-blue);
+}
+
+.progress-circle-container.formula-yellow .progress-cycle {
+    stroke: var(--matte-yellow);
+}
+
+.progress-circle-container.formula-green .progress-cycle {
+    stroke: var(--matte-green);
 }
 
 .radial {
@@ -189,6 +290,7 @@ body {
     border: 2px solid var(--cold-gray);
     backdrop-filter: blur(10px);
     box-shadow: var(--shadow-medium);
+    z-index: 5; /* Ensure buttons are above progress circle but below indicator ball */
 }
 
 /* Base dot - mathematically positioned, cannot jump */
@@ -2159,6 +2261,24 @@ lete Button in Modal */
         height: 280px;
     }
     
+    /* Progress circle - Mobile optimized */
+    .progress-circle-container {
+        width: 340px;
+        height: 340px;
+    }
+    
+    /* Thicker strokes for better mobile visibility */
+    .progress-bg,
+    .progress-cycle {
+        stroke-width: 10;
+    }
+    
+    .progress-indicator {
+        width: 10px;
+        height: 10px;
+        border-width: 3px;
+    }
+    
     .dot {
         --r: 95px !important; /* Smaller radius for mobile */
         width: 70px !important;
@@ -2468,6 +2588,24 @@ lete Button in Modal */
         height: 240px;
     }
     
+    /* Progress circle - Extra small mobile */
+    .progress-circle-container {
+        width: 300px;
+        height: 300px;
+    }
+    
+    /* Keep strokes thick enough to be visible on small screens */
+    .progress-bg,
+    .progress-cycle {
+        stroke-width: 8;
+    }
+    
+    .progress-indicator {
+        width: 8px;
+        height: 8px;
+        border-width: 2px;
+    }
+    
     .dot {
         --r: 80px !important;
         width: 60px !important;
@@ -2519,6 +2657,23 @@ lete Button in Modal */
     .radial {
         width: 220px;
         height: 220px;
+    }
+    
+    /* Progress circle - Landscape mobile */
+    .progress-circle-container {
+        width: 280px;
+        height: 280px;
+    }
+    
+    .progress-bg,
+    .progress-cycle {
+        stroke-width: 6;
+    }
+    
+    .progress-indicator {
+        width: 6px;
+        height: 6px;
+        border-width: 1px;
     }
     
     .dot {

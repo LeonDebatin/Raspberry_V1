@@ -13,6 +13,19 @@
     </div>
     
     <div class="radial-container">
+        <!-- Progress Circle for Schedule Indication -->
+        <div class="progress-circle-container" id="progress-circle-container">
+            <svg class="progress-circle" viewBox="0 0 200 200">
+                <!-- Background circle (always grey) -->
+                <circle cx="100" cy="100" r="85" class="progress-bg" />
+                <!-- Cycle progress indicator (only duration portion colored) -->
+                <circle cx="100" cy="100" r="85" class="progress-cycle" id="progress-cycle" />
+            </svg>
+            <!-- Moving indicator ball (separate element for highest z-index) -->
+            <div class="progress-indicator" id="progress-indicator"></div>
+        </div>
+        
+        <!-- Main Formula Selection Circle -->
         <div class="radial">
             <button class="dot off" id="off-btn" data-color="off">OFF</button>
             <button class="dot crimson" data-color="red">CRIMSON</button>

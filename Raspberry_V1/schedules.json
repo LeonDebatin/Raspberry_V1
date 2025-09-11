@@ -2,7 +2,7 @@
   "schedules": [
     {
       "id": 1,
-      "start_time": "10:22",
+      "start_time": "10:58",
       "end_time": "11:00",
       "formula": "yellow",
       "cycle_time": 60,
