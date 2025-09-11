@@ -8,6 +8,7 @@ import sys
 import time
 from app import app, gpio_controller
 
+
 def check_port(host, port):
     """Check if a port is available"""
     try:
@@ -19,22 +20,24 @@ def check_port(host, port):
     except Exception:
         return False
 
+
 def find_available_port(start_port=5000, max_attempts=10):
     """Find an available port starting from start_port"""
     for port in range(start_port, start_port + max_attempts):
-        if check_port('127.0.0.1', port):
+        if check_port("127.0.0.1", port):
             return port
     return None
+
 
 def main():
     print("🚀 Starting Scent Controller...")
     print(f"📍 Current directory: {sys.path[0]}")
-    
+
     # Check if default port is available
     default_port = 5000
-    if not check_port('127.0.0.1', default_port):
+    if not check_port("127.0.0.1", default_port):
         print(f"⚠️  Port {default_port} is already in use!")
-        
+
         # Try to find an alternative port
         alternative_port = find_available_port(5001)
         if alternative_port:
@@ -42,9 +45,11 @@ def main():
             default_port = alternative_port
         else:
             print("❌ No available ports found!")
-            print("Please close other applications using ports 5000-5010 and try again.")
+            print(
+                "Please close other applications using ports 5000-5010 and try again."
+            )
             return
-    
+
     print(f"🌐 Starting server on http://localhost:{default_port}")
     print(f"🌐 Also accessible via http://127.0.0.1:{default_port}")
     print("📱 On mobile devices, use your computer's IP address")
@@ -55,14 +60,14 @@ def main():
     print()
     print("⏹️  Press Ctrl+C to stop the server")
     print("=" * 50)
-    
+
     try:
         # Start the Flask app
         app.run(
             host="0.0.0.0",  # Accept connections from any IP
             port=default_port,
             debug=False,  # Disable debug mode for cleaner output
-            use_reloader=False  # Disable auto-reloader to prevent double startup
+            use_reloader=False,  # Disable auto-reloader to prevent double startup
         )
     except KeyboardInterrupt:
         print("\n🛑 Server stopped by user")
@@ -72,6 +77,7 @@ def main():
         print("🧹 Cleaning up GPIO resources...")
         gpio_controller.cleanup()
         print("✅ Cleanup completed")
+
 
 if __name__ == "__main__":
     main()
