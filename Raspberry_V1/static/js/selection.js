@@ -626,7 +626,7 @@ class ButtonEffects {
             document.head.appendChild(style);
         }
         
-        button.style.position = 'relative';
+        // Don't override position - buttons need to stay absolutely positioned for radial layout
         button.style.overflow = 'hidden';
         button.appendChild(ripple);
         
