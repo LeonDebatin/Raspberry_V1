@@ -16,7 +16,18 @@
 .selection-header h2 {
     font-size: 2.5rem;
     font-weight: 200;
+    margin-bottom: 0.5rem;
+}
+
+.instruction-text {
     margin-bottom: 1rem;
+}
+
+.instruction-text p {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin: 0.2rem 0;
+    font-weight: 400;
 }
 
 .status-indicator {
@@ -102,10 +113,10 @@
 
 .progress-indicator {
     position: absolute;
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
     background: var(--text-dark);
-    border: 1px solid white;
+    border: 2px solid white;
     border-radius: 50%;
     top: 50%;
     left: 50%;
@@ -327,8 +338,8 @@
 /* Demo Button and Description */
 .demo-btn {
     padding: 0.8rem 1.5rem;
-    border: 1px solid #666;
-    background: #666;
+    border: 1px solid #bbb;
+    background: #bbb;
     color: white;
     border-radius: 15px;
     cursor: pointer;
@@ -361,17 +372,20 @@
 
 /* Scent Description Container */
 .scent-description {
-    margin-top: 1.5rem;
-    padding: 1.5rem;
+    margin-top: 1rem;
+    padding: 1rem 1.5rem;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
-    border-radius: 20px;
+    border-radius: 15px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
     text-align: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 1;
     transform: translateY(0);
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .scent-description.hidden {
@@ -382,19 +396,19 @@
 
 /* Scent Description Color Variants */
 .scent-description.amber {
-    background: rgba(197, 165, 74, 0.9);
+    background: rgba(197, 165, 74, 0.75);
 }
 
 .scent-description.sage {
-    background: rgba(107, 155, 107, 0.9);
+    background: rgba(107, 155, 107, 0.75);
 }
 
 .scent-description.azure {
-    background: rgba(74, 144, 197, 0.9);
+    background: rgba(74, 144, 197, 0.75);
 }
 
 .scent-description.crimson {
-    background: rgba(197, 85, 74, 0.9);
+    background: rgba(197, 85, 74, 0.75);
 }
 
 .scent-text #scent-name {

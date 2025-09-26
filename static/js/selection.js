@@ -33,8 +33,6 @@ class SelectionController {
     initializeElements() {
         this.formulaBtns = document.querySelectorAll('.dot');
         this.offBtn = document.getElementById('off-btn');
-        this.statusText = document.getElementById('status-text');
-        this.statusDot = document.getElementById('status-dot');
         
         // Slider elements
         this.diffusionSlider = document.getElementById('diffusion-slider');
@@ -224,17 +222,8 @@ class SelectionController {
     }
     
     updateStatus(text, active) {
-        if (this.statusText) {
-            this.statusText.textContent = text;
-        }
-        
-        if (this.statusDot) {
-            if (active) {
-                this.statusDot.classList.add('active');
-            } else {
-                this.statusDot.classList.remove('active');
-            }
-        }
+        // Status indicator has been replaced with scent descriptions
+        // This method is kept for compatibility but no longer updates UI elements
     }
     
     async loadStatus() {
