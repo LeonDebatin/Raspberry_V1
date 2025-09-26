@@ -147,7 +147,6 @@ Mock GPIO: Set pin 18 to HIGH
 
 ### File Structure
 ```
-Raspberry_V1/
 ├── app.py                 # Flask application
 ├── gpio_controller.py     # GPIO control logic
 ├── pin_mapping.json       # GPIO pin configuration
