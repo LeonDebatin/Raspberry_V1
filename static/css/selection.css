@@ -283,7 +283,7 @@
     border-radius: 15px;
     /* two layers: filled (black) + full track (light grey) */
     background:
-        linear-gradient(#000, #000) no-repeat,
+        linear-gradient(#5f6368, #5f6368) no-repeat,
         #e5e5e5;
     /* width of the filled layer comes from --sx set via JS */
     background-size: var(--sx, 0%) 100%, 100% 100%;
@@ -295,7 +295,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #000;              /* black thumb */
+    background: #5f6368;              /* black thumb */
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0,0,0,.2);
     transition: transform .15s ease;

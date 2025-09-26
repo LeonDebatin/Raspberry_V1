@@ -77,6 +77,12 @@ def schedule():
     return render_template("schedule.html")
 
 
+@app.route("/information")
+def information():
+    """Scent information and controls page"""
+    return render_template("information.html")
+
+
 @app.route("/api/activate", methods=["POST"])
 def activate_formula():
     """Activate formula with configuration"""
