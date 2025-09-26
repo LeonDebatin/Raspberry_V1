@@ -7,6 +7,18 @@ class SelectionController {
         this.diffusionDuration = 10; // Default to 10 seconds
         this.isActive = false;
         
+        // Demo mode properties
+        this.isInDemoMode = false;
+        this.demoSequence = ['yellow', 'green', 'blue', 'red'];
+        this.demoCurrentStep = 0;
+        this.demoTimeout = null;
+        this.demoDescriptions = {
+            'yellow': 'Warm and inviting amber creates a cozy atmosphere with rich, honeyed notes.',
+            'green': 'Fresh sage brings clarity and purification with herbal, earthy essence.',
+            'blue': 'Cool azure refreshes the mind with crisp, oceanic tranquility.',
+            'red': 'Bold crimson energizes the space with deep, passionate intensity.'
+        };
+        
         // Configuration: Set to true to use page reload instead of position reset
         this.usePageReload = false; // Change to true if position reset doesn't work
         
@@ -25,6 +37,12 @@ class SelectionController {
         // Slider elements
         this.diffusionSlider = document.getElementById('diffusion-slider');
         this.diffusionSecondsDisplay = document.getElementById('diffusion-seconds');
+        
+        // Demo elements
+        this.demoBtn = document.getElementById('demo-btn');
+        this.demoDescription = document.getElementById('demo-description');
+        this.demoScentName = document.getElementById('demo-scent-name');
+        this.demoScentDescriptionText = document.getElementById('demo-scent-description');
         
         // Progress circle elements
         this.progressContainer = document.getElementById('progress-circle-container');
@@ -60,6 +78,17 @@ class SelectionController {
         if (this.diffusionSlider) {
             this.diffusionSlider.addEventListener('input', (e) => {
                 this.setDiffusionDuration(parseInt(e.target.value));
+            });
+        }
+        
+        // Demo button click
+        if (this.demoBtn) {
+            this.demoBtn.addEventListener('click', () => {
+                if (!this.isInDemoMode) {
+                    this.startDemoMode();
+                } else {
+                    this.stopDemoMode();
+                }
             });
         }
     }
@@ -564,6 +593,87 @@ class SelectionController {
             // Fall back to regular selectFormula if API call fails
             this.selectFormula(this.selectedFormula);
         }
+    }
+    
+    // Demo Mode Methods
+    startDemoMode() {
+        if (this.isInDemoMode) return;
+        
+        this.isInDemoMode = true;
+        this.demoCurrentStep = 0;
+        
+        // Set diffusion duration to 5 seconds for demo
+        this.setDiffusionDuration(5);
+        if (this.diffusionSlider) {
+            this.diffusionSlider.value = 5;
+        }
+        
+        // Update demo button
+        this.demoBtn.textContent = 'Stop Demo';
+        this.demoBtn.classList.add('active');
+        this.demoBtn.disabled = false;
+        
+        // Show description container
+        this.demoDescription.classList.remove('hidden');
+        
+        // Start the demo sequence
+        this.executeDemoStep();
+    }
+    
+    stopDemoMode() {
+        this.isInDemoMode = false;
+        
+        // Clear any pending timeouts
+        if (this.demoTimeout) {
+            clearTimeout(this.demoTimeout);
+            this.demoTimeout = null;
+        }
+        
+        // Update demo button
+        this.demoBtn.textContent = 'Start Demo';
+        this.demoBtn.classList.remove('active');
+        
+        // Hide description container
+        this.demoDescription.classList.add('hidden');
+        
+        // Activate off button
+        this.deactivateAll();
+    }
+    
+    async executeDemoStep() {
+        if (!this.isInDemoMode) return;
+        
+        const currentColor = this.demoSequence[this.demoCurrentStep];
+        const colorNames = {
+            'yellow': 'Amber',
+            'green': 'Sage', 
+            'blue': 'Azure',
+            'red': 'Crimson'
+        };
+        
+        // Update description
+        this.demoScentName.textContent = colorNames[currentColor];
+        this.demoScentDescriptionText.textContent = this.demoDescriptions[currentColor];
+        
+        // Activate the scent
+        try {
+            await this.selectFormula(currentColor);
+        } catch (error) {
+            console.error('Demo step error:', error);
+        }
+        
+        // Schedule next step or finish demo
+        this.demoTimeout = setTimeout(() => {
+            this.demoCurrentStep++;
+            
+            if (this.demoCurrentStep >= this.demoSequence.length) {
+                // Demo finished
+                this.stopDemoMode();
+            } else {
+                // Continue to next step
+                this.executeDemoStep();
+            }
+        }, 5000); // 5 seconds per scent
     }
 }
 

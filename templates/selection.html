@@ -40,7 +40,7 @@
     </div>
     
     <div class="config-bar">
-        <div class="config-section full-width">
+        <div class="config-section">
             <label class="config-label">Diffusion Duration</label>
             <div class="slider-container">
                 <input type="range" id="diffusion-slider" class="diffusion-slider" 
@@ -49,6 +49,18 @@
                     <span id="diffusion-seconds">10</span>s of 60s
                 </div>
             </div>
+        </div>
+        <div class="config-section">
+            <label class="config-label">Demo Mode</label>
+            <button id="demo-btn" class="demo-btn">Start Demo</button>
+        </div>
+    </div>
+    
+    <!-- Demo Description Container -->
+    <div id="demo-description" class="demo-description hidden">
+        <div class="demo-text">
+            <span id="demo-scent-name"></span>
+            <p id="demo-scent-description"></p>
         </div>
     </div>
 </div>
