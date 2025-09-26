@@ -36,17 +36,35 @@ A sophisticated web-based scent dispenser controller with a fancy matte design a
 - pip package manager
 
 ### Setup
+
 1. **Clone or download the project**
    ```bash
    cd Raspberry_V1
    ```
 
-2. **Install Python dependencies**
+2. **Create a virtual environment (recommended)**
    ```bash
+   # Create virtual environment
+   python -m venv .venv
+   
+   # Activate virtual environment
+   # On Linux/Mac:
+   source .venv/bin/activate
+   
+   # On Windows:
+   .venv\Scripts\activate
+   ```
+   
+   ⚠️ **Important**: Make sure the virtual environment is activated before installing packages!
+   You should see `(.venv)` at the beginning of your command prompt.
+
+3. **Install Python dependencies**
+   ```bash
+   # Make sure virtual environment is activated first!
    pip install -r requirements.txt
    ```
 
-3. **Configure GPIO pins (optional)**
+4. **Configure GPIO pins (optional)**
    Edit `pin_mapping.json` to customize GPIO pin assignments:
    ```json
    {
@@ -59,7 +77,7 @@ A sophisticated web-based scent dispenser controller with a fancy matte design a
    }
    ```
 
-4. **Run the application**
+5. **Run the application**
    ```bash
    python app.py
    ```
@@ -94,17 +112,22 @@ A sophisticated web-based scent dispenser controller with a fancy matte design a
 ## Configuration Files
 
 ### pin_mapping.json
-Defines GPIO pin assignments for each formula:
+Defines GPIO pin assignments for each formula. The system uses these pins to control scent dispensers:
+
 ```json
 {
   "formulas": {
-    "red": 18,
-    "blue": 19,
-    "yellow": 20,
-    "green": 21
+    "red": 18,     # GPIO pin for Crimson formula dispenser
+    "blue": 19,    # GPIO pin for Azure formula dispenser  
+    "yellow": 20,  # GPIO pin for Amber formula dispenser
+    "green": 21    # GPIO pin for Sage formula dispenser
   }
 }
 ```
+
+**Default Pins**: If this file is missing, the system uses pins 18, 19, 20, 21 for red, blue, yellow, green respectively.
+
+**Customization**: Modify pin numbers to match your hardware setup. Ensure pins support output mode and don't conflict with other Raspberry Pi functions.
 
 ### schedules.json
 Stores scheduled activations (managed automatically):
@@ -147,11 +170,14 @@ Mock GPIO: Set pin 18 to HIGH
 
 ### File Structure
 ```
+├── .gitignore             # Git ignore patterns  
+├── .venv/                 # Virtual environment (created by setup)
 ├── app.py                 # Flask application
 ├── gpio_controller.py     # GPIO control logic
 ├── pin_mapping.json       # GPIO pin configuration
 ├── schedules.json         # Schedule storage
 ├── requirements.txt       # Python dependencies
+├── README.md             # This documentation
 ├── templates/
 │   ├── base.html         # Base template
 │   ├── selection.html    # Main selection interface
@@ -164,6 +190,51 @@ Mock GPIO: Set pin 18 to HIGH
         ├── selection.js  # Selection page logic
         └── schedule.js   # Schedule page logic
 ```
+
+## Technical Architecture
+
+### System Overview
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Web Browser   │◄──►│  Flask Web App  │◄──►│ GPIO Controller │
+│                 │    │                 │    │                 │
+│ - Selection UI  │    │ - Route Handler │    │ - Pin Control   │
+│ - Schedule UI   │    │ - JSON Config   │    │ - Timing Logic  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │ Configuration   │
+                       │ Files           │
+                       │ - pin_mapping   │
+                       │ - schedules     │
+                       └─────────────────┘
+```
+
+### Key Design Principles
+
+#### Single Formula Mode
+- **Exclusive Control**: Only one formula can be active at any time for safety
+- **Automatic Deactivation**: Selecting a new formula automatically deactivates the current one
+- **Conflict Prevention**: Manual activation overrides scheduled operations
+
+#### GPIO Management
+- **Mock Mode**: Automatically detects Raspberry Pi GPIO availability
+- **Development Support**: Runs on Windows/Mac with console output simulation  
+- **Error Resilience**: Graceful handling of GPIO errors and hardware issues
+- **Clean Shutdown**: Proper GPIO cleanup on application termination
+
+#### Configuration-Driven
+- **Pin Mapping**: GPIO pins configurable via `pin_mapping.json`
+- **Schedule Storage**: Persistent schedules in `schedules.json`
+- **Default Fallbacks**: System continues with defaults if config files are missing
+- **Runtime Updates**: Configuration changes applied without restart
+
+#### Web Interface Design
+- **Circular Layout**: Intuitive radial button arrangement for formula selection
+- **Visual Feedback**: Real-time status updates and selection highlighting
+- **Responsive Design**: Works on desktop and mobile devices
+- **Keyboard Shortcuts**: Quick access via keyboard for power users
 
 ## Safety Features
 
@@ -205,7 +276,25 @@ function getFormulaDisplayName(color) {
 
 ### Common Issues
 
-#### 1. Connection Error / Buttons Not Working
+#### 1. ModuleNotFoundError: No module named 'flask'
+**Symptoms**: `ModuleNotFoundError: No module named 'flask'` when running `python app.py`
+**Solution**: 
+```bash
+# Activate virtual environment first
+# On Windows:
+.venv\Scripts\activate
+
+# On Linux/Mac:
+source .venv/bin/activate
+
+# Then install requirements
+pip install -r requirements.txt
+
+# Now run the app
+python app.py
+```
+
+#### 2. Connection Error / Buttons Not Working
 **Symptoms**: "Connection Error" message, buttons show error when pressed
 **Solution**: 
 ```bash
