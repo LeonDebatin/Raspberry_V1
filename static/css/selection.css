@@ -199,7 +199,8 @@
 
 /* Configuration Bar */
 .config-bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
     gap: 2rem;
     padding: 1rem;
     background: rgba(255, 255, 255, 0.9);
@@ -207,7 +208,10 @@
     border-radius: 20px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
-    align-items: flex-start;
+    align-items: start;
+    width: 100%;
+    max-width: calc(100vw - 2rem);
+    box-sizing: border-box;
 }
 
 .config-section {
@@ -254,13 +258,6 @@
 }
 
 /* Diffusion Duration Slider */
-.config-section:first-child {
-    flex: 2;
-}
-
-.config-section:last-child {
-    flex: 1;
-}
 
 .slider-container {
     width: 100%;
@@ -401,7 +398,8 @@
 /* Mobile optimizations */
 @media (max-width: 768px) {
     .config-bar {
-        gap: 1rem;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 0.8rem;
         padding: 0.8rem;
         margin: 0 1rem;
     }
