@@ -3,8 +3,8 @@
 class SelectionController {
     constructor() {
         this.selectedFormula = null;
-        this.cycleTime = 60;
-        this.duration = 10;
+        this.cycleTime = 60; // Fixed at 60 seconds
+        this.diffusionDuration = 10; // Default to 10 seconds
         this.isActive = false;
         
         // Configuration: Set to true to use page reload instead of position reset
@@ -12,16 +12,19 @@ class SelectionController {
         
         this.initializeElements();
         this.bindEvents();
-        this.updateConfigButtons(); // Set initial button states
+        this.updateSliderDisplay(); // Set initial slider display
         this.loadStatus();
     }
     
     initializeElements() {
         this.formulaBtns = document.querySelectorAll('.dot');
         this.offBtn = document.getElementById('off-btn');
-        this.configBtns = document.querySelectorAll('.config-btn');
         this.statusText = document.getElementById('status-text');
         this.statusDot = document.getElementById('status-dot');
+        
+        // Slider elements
+        this.diffusionSlider = document.getElementById('diffusion-slider');
+        this.diffusionSecondsDisplay = document.getElementById('diffusion-seconds');
         
         // Progress circle elements
         this.progressContainer = document.getElementById('progress-circle-container');
@@ -53,23 +56,12 @@ class SelectionController {
             });
         }
         
-        // Configuration button clicks
-        this.configBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const cycleTime = e.currentTarget.dataset.cycle;
-                const duration = e.currentTarget.dataset.duration;
-                
-                if (cycleTime) {
-                    this.setCycleTime(parseInt(cycleTime));
-                }
-                
-                if (duration) {
-                    this.setDuration(parseInt(duration));
-                }
-                
-                this.updateConfigButtons();
+        // Diffusion slider changes
+        if (this.diffusionSlider) {
+            this.diffusionSlider.addEventListener('input', (e) => {
+                this.setDiffusionDuration(parseInt(e.target.value));
             });
-        });
+        }
     }
     
     async selectFormula(color) {
@@ -79,7 +71,7 @@ class SelectionController {
             const response = await window.api.post('/api/activate', {
                 color: color,
                 cycle_time: this.cycleTime,
-                duration: this.duration
+                duration: this.diffusionDuration
             });
             
             this.selectedFormula = color;
@@ -92,7 +84,7 @@ class SelectionController {
             this.startProgressCircle(color, false);
             
             window.notifications.success(
-                `${getFormulaDisplayName(color)} formula activated (${this.cycleTime}s cycle, ${this.duration}s duration)`
+                `${getFormulaDisplayName(color)} formula activated (${this.diffusionDuration}s of ${this.cycleTime}s)`
             );
             
         } catch (error) {
@@ -138,8 +130,9 @@ class SelectionController {
         }
     }
     
-    setCycleTime(time) {
-        this.cycleTime = time;
+    setDiffusionDuration(duration) {
+        this.diffusionDuration = duration;
+        this.updateSliderDisplay();
         
         // If currently active, restart the cycle with new settings (ball jumps to start)
         if (this.isActive && this.selectedFormula) {
@@ -150,17 +143,20 @@ class SelectionController {
         }
     }
     
-    setDuration(time) {
-        this.duration = time;
-        
-        // If currently active, restart the cycle with new settings (ball jumps to start)
-        if (this.isActive && this.selectedFormula) {
-            // Update the progress circle immediately with new timing
-            this.updateProgressCircleTiming();
-            // Reactivate with new settings - this will reset the cycle timing
-            this.reactivateWithNewSettings();
+    updateSliderDisplay() {
+        if (this.diffusionSecondsDisplay) {
+            this.diffusionSecondsDisplay.textContent = this.diffusionDuration;
+        }
+        if (this.diffusionSlider) {
+            this.diffusionSlider.value = this.diffusionDuration;
+            
+            // Update the progress fill (black area to the left of the thumb)
+            const percentage = ((this.diffusionDuration - 5) / (60 - 5)) * 100;
+            this.diffusionSlider.style.setProperty('--sx', `${percentage}%`);
         }
     }
+    
+
     
     updateFormulaButtons() {
         this.formulaBtns.forEach(btn => {
@@ -182,21 +178,10 @@ class SelectionController {
         }
     }
     
+    // No longer needed as we use a slider instead of buttons
     updateConfigButtons() {
-        this.configBtns.forEach(btn => {
-            const cycleTime = btn.dataset.cycle;
-            const duration = btn.dataset.duration;
-            
-            btn.classList.remove('active');
-            
-            if (cycleTime && parseInt(cycleTime) === this.cycleTime) {
-                btn.classList.add('active');
-            }
-            
-            if (duration && parseInt(duration) === this.duration) {
-                btn.classList.add('active');
-            }
-        });
+        // This method is kept for compatibility but no longer does anything
+        // since we replaced the config buttons with a slider
     }
     
     updateStatus(text, active) {
@@ -392,8 +377,8 @@ class SelectionController {
     setupStaticArc() {
         if (!this.progressCycle) return;
         
-        // Calculate the active portion of the cycle (duration/cycle_time)
-        const activePortion = this.duration / this.cycleTime;
+        // Calculate the active portion of the cycle (diffusion duration / cycle time)
+        const activePortion = this.diffusionDuration / this.cycleTime;
         const circumference = 534.07; // 2 * π * 85
         
         // Calculate how much of the circle should be colored (active portion only)
@@ -483,7 +468,9 @@ class SelectionController {
         if (status.cycle_start_time && status.current_cycle_time && status.current_duration) {
             // Update local settings to match backend
             this.cycleTime = status.current_cycle_time;
-            this.duration = status.current_duration;
+            // Update diffusion duration from backend
+            this.diffusionDuration = status.current_duration;
+            this.updateSliderDisplay();
             
             // Calculate backend cycle start time in frontend time
             const backendCycleStartMs = status.cycle_start_time * 1000; // Convert to milliseconds
@@ -498,7 +485,7 @@ class SelectionController {
                 backendCycleStart: new Date(backendCycleStartMs).toLocaleTimeString(),
                 currentProgress: Math.round(cycleProgress * 100) + '%',
                 cycleTime: this.cycleTime,
-                duration: this.duration
+                diffusionDuration: this.diffusionDuration
             });
             
             // Always synchronize with backend timing (single source of truth)
@@ -564,7 +551,7 @@ class SelectionController {
             const response = await window.api.post('/api/activate', {
                 color: this.selectedFormula,
                 cycle_time: this.cycleTime,
-                duration: this.duration
+                duration: this.diffusionDuration
             });
             
             // Restart progress circle with fresh cycle timing (ball starts from top)
