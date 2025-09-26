@@ -12,7 +12,9 @@ class SelectionController {
         this.demoSequence = ['yellow', 'green', 'blue', 'red'];
         this.demoCurrentStep = 0;
         this.demoTimeout = null;
-        this.demoDescriptions = {
+        
+        // Scent descriptions for all modes
+        this.scentDescriptions = {
             'yellow': 'Warm and inviting amber creates a cozy atmosphere with rich, honeyed notes.',
             'green': 'Fresh sage brings clarity and purification with herbal, earthy essence.',
             'blue': 'Cool azure refreshes the mind with crisp, oceanic tranquility.',
@@ -40,9 +42,11 @@ class SelectionController {
         
         // Demo elements
         this.demoBtn = document.getElementById('demo-btn');
-        this.demoDescription = document.getElementById('demo-description');
-        this.demoScentName = document.getElementById('demo-scent-name');
-        this.demoScentDescriptionText = document.getElementById('demo-scent-description');
+        
+        // Scent description elements (used for all scent activations)
+        this.scentDescription = document.getElementById('scent-description');
+        this.scentName = document.getElementById('scent-name');
+        this.scentDescriptionText = document.getElementById('scent-description-text');
         
         // Progress circle elements
         this.progressContainer = document.getElementById('progress-circle-container');
@@ -112,6 +116,9 @@ class SelectionController {
             // Start progress circle for manual activation
             this.startProgressCircle(color, false);
             
+            // Show scent description
+            this.showScentDescription(color);
+            
             window.notifications.success(
                 `${getFormulaDisplayName(color)} formula activated (${this.diffusionDuration}s of ${this.cycleTime}s)`
             );
@@ -143,6 +150,9 @@ class SelectionController {
             
             // Stop progress circle
             this.stopProgressCircle();
+            
+            // Hide scent description
+            this.hideScentDescription();
             
             window.notifications.success('All formulas deactivated');
             
@@ -595,6 +605,43 @@ class SelectionController {
         }
     }
     
+    // Scent Description Methods
+    showScentDescription(color) {
+        if (!this.scentDescription || !this.scentName || !this.scentDescriptionText) return;
+        
+        const colorNames = {
+            'yellow': 'Amber',
+            'green': 'Sage', 
+            'blue': 'Azure',
+            'red': 'Crimson'
+        };
+        const colorClassNames = {
+            'yellow': 'amber',
+            'green': 'sage',
+            'blue': 'azure',
+            'red': 'crimson'
+        };
+        
+        // Update content
+        this.scentName.textContent = colorNames[color];
+        this.scentDescriptionText.textContent = this.scentDescriptions[color];
+        
+        // Remove previous color classes and add current one
+        this.scentDescription.className = this.scentDescription.className.replace(/\b(amber|sage|azure|crimson)\b/g, '');
+        this.scentDescription.classList.add(colorClassNames[color]);
+        
+        // Show the container
+        this.scentDescription.classList.remove('hidden');
+    }
+    
+    hideScentDescription() {
+        if (!this.scentDescription) return;
+        
+        // Hide the container and remove color classes
+        this.scentDescription.classList.add('hidden');
+        this.scentDescription.className = this.scentDescription.className.replace(/\b(amber|sage|azure|crimson)\b/g, '');
+    }
+    
     // Demo Mode Methods
     startDemoMode() {
         if (this.isInDemoMode) return;
@@ -613,10 +660,7 @@ class SelectionController {
         this.demoBtn.classList.add('active');
         this.demoBtn.disabled = false;
         
-        // Show description container
-        this.demoDescription.classList.remove('hidden');
-        
-        // Start the demo sequence
+        // Start the demo sequence (scent description will be shown by selectFormula)
         this.executeDemoStep();
     }
     
@@ -633,10 +677,7 @@ class SelectionController {
         this.demoBtn.textContent = 'Start Demo';
         this.demoBtn.classList.remove('active');
         
-        // Hide description container
-        this.demoDescription.classList.add('hidden');
-        
-        // Activate off button
+        // Activate off button (this will hide the scent description)
         this.deactivateAll();
     }
     
@@ -644,18 +685,8 @@ class SelectionController {
         if (!this.isInDemoMode) return;
         
         const currentColor = this.demoSequence[this.demoCurrentStep];
-        const colorNames = {
-            'yellow': 'Amber',
-            'green': 'Sage', 
-            'blue': 'Azure',
-            'red': 'Crimson'
-        };
         
-        // Update description
-        this.demoScentName.textContent = colorNames[currentColor];
-        this.demoScentDescriptionText.textContent = this.demoDescriptions[currentColor];
-        
-        // Activate the scent
+        // Activate the scent (this will automatically show the scent description)
         try {
             await this.selectFormula(currentColor);
         } catch (error) {

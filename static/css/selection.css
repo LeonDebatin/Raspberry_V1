@@ -359,8 +359,8 @@
     border-color: #444;
 }
 
-/* Demo Description Container */
-.demo-description {
+/* Scent Description Container */
+.scent-description {
     margin-top: 1.5rem;
     padding: 1.5rem;
     background: rgba(255, 255, 255, 0.95);
@@ -374,27 +374,46 @@
     transform: translateY(0);
 }
 
-.demo-description.hidden {
+.scent-description.hidden {
     opacity: 0;
     transform: translateY(-10px);
     pointer-events: none;
 }
 
-.demo-text #demo-scent-name {
+/* Scent Description Color Variants */
+.scent-description.amber {
+    background: rgba(197, 165, 74, 0.9);
+}
+
+.scent-description.sage {
+    background: rgba(107, 155, 107, 0.9);
+}
+
+.scent-description.azure {
+    background: rgba(74, 144, 197, 0.9);
+}
+
+.scent-description.crimson {
+    background: rgba(197, 85, 74, 0.9);
+}
+
+.scent-text #scent-name {
     display: block;
     font-size: 1.5rem;
     font-weight: 600;
-    color: var(--text-dark);
+    color: white;
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 1px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.demo-text #demo-scent-description {
+.scent-text #scent-description-text {
     font-size: 1rem;
-    color: var(--text-light);
+    color: white;
     line-height: 1.5;
     margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Mobile optimizations */
