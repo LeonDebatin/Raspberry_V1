@@ -239,7 +239,7 @@ body {
     transition: var(--transition);
     transform: translate(-50%, -50%);
     z-index: 5;
-    opacity: 0.8; /* Default opacity for all buttons */
+    opacity: 0.75; /* Default opacity for all buttons */
 }
 
 .dot:hover {
