@@ -2,6 +2,10 @@
 
 {% block title %}Schedule - Scent Controller{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/schedule.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="schedule-container">
     <div class="schedule-header">
