@@ -77,6 +77,12 @@ def schedule():
     return render_template("schedule.html")
 
 
+@app.route("/quiz")
+def quiz():
+    """Scent preference quiz page"""
+    return render_template("quiz.html")
+
+
 @app.route("/information")
 def information():
     """Scent information and controls page"""
@@ -466,6 +472,62 @@ def delete_schedule(schedule_id):
 
     except Exception as e:
         app.logger.error(f"Error deleting schedule: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/quiz-result", methods=["POST"])
+def quiz_result():
+    """Calculate quiz result and return recommended scent"""
+    try:
+        data = request.get_json()
+        answers = data.get("answers", [])
+        
+        if len(answers) != 10:
+            return jsonify({"error": "Invalid number of answers"}), 400
+        
+        # Count answers for each scent formula
+        scent_counts = {"red": 0, "blue": 0, "yellow": 0, "green": 0}
+        
+        for answer in answers:
+            if answer in scent_counts:
+                scent_counts[answer] += 1
+        
+        # Find the scent with the most votes
+        recommended_scent = max(scent_counts, key=scent_counts.get)
+        
+        # Scent descriptions and names
+        scent_info = {
+            "red": {
+                "name": "CRIMSON",
+                "description": "Bold and energizing - perfect for motivation and passion",
+                "mood": "Energetic and passionate"
+            },
+            "blue": {
+                "name": "AZURE", 
+                "description": "Cool and refreshing - ideal for relaxation and tranquility",
+                "mood": "Calm and peaceful"
+            },
+            "yellow": {
+                "name": "AMBER",
+                "description": "Warm and inviting - great for comfort and coziness",
+                "mood": "Warm and welcoming"
+            },
+            "green": {
+                "name": "SAGE",
+                "description": "Fresh and clarifying - excellent for focus and clarity",
+                "mood": "Fresh and focused"
+            }
+        }
+        
+        return jsonify({
+            "status": "success",
+            "recommended_scent": recommended_scent,
+            "scent_info": scent_info[recommended_scent],
+            "score_breakdown": scent_counts
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error processing quiz result: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 

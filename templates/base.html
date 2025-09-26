@@ -16,6 +16,9 @@
                 <a href="{{ url_for('selection') }}" class="nav-link {% if request.endpoint == 'selection' %}active{% endif %}">
                     Selection
                 </a>
+                <a href="{{ url_for('quiz') }}" class="nav-link {% if request.endpoint == 'quiz' %}active{% endif %}">
+                    Quiz
+                </a>
                 <a href="{{ url_for('schedule') }}" class="nav-link {% if request.endpoint == 'schedule' %}active{% endif %}">
                     Schedule
                 </a>

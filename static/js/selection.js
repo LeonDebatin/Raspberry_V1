@@ -93,6 +93,15 @@ class SelectionController {
                 }
             });
         }
+        
+        // Demo link click (from instruction text)
+        const demoLink = document.querySelector('.demo-link');
+        if (demoLink) {
+            demoLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.highlightDemoButton();
+            });
+        }
     }
     
     async selectFormula(color) {
@@ -668,6 +677,22 @@ class SelectionController {
         
         // Activate off button (this will hide the scent description)
         this.deactivateAll();
+    }
+    
+    highlightDemoButton() {
+        // Scroll to demo button
+        this.demoBtn.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+        });
+        
+        // Add temporary highlight effect
+        this.demoBtn.style.animation = 'pulse 2s ease-in-out 3';
+        
+        // Remove animation after it completes
+        setTimeout(() => {
+            this.demoBtn.style.animation = '';
+        }, 6000);
     }
     
     async executeDemoStep() {

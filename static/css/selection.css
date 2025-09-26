@@ -30,6 +30,32 @@
     font-weight: 400;
 }
 
+.quiz-link {
+    color: var(--text-dark);
+    text-decoration: underline;
+    font-weight: bold;
+    transition: var(--transition);
+    padding: 2px 4px;
+}
+
+.quiz-link:hover {
+    color: var(--text-light);
+    text-decoration: underline;
+}
+
+.demo-link {
+    color: var(--text-dark);
+    text-decoration: underline;
+    font-weight: bold;
+    transition: var(--transition);
+    padding: 2px 4px;
+}
+
+.demo-link:hover {
+    color: var(--text-light);
+    text-decoration: underline;
+}
+
 .status-indicator {
     display: flex;
     align-items: center;
@@ -466,5 +492,21 @@
     
     .slider-value {
         font-size: 0.85rem;
+    }
+}
+
+/* Demo button highlight animation */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(107, 155, 107, 0.7);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(107, 155, 107, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(107, 155, 107, 0);
     }
 }

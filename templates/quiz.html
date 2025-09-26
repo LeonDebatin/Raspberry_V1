@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz - Scent Controller{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/quiz.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <!-- Quiz Introduction -->
+    <div id="quiz-intro" class="quiz-section active">
+        <div class="quiz-header">
+            <h2>Scent Preference Quiz</h2>
+            <p class="quiz-subtitle">Discover your perfect scent match</p>
+        </div>
+        <div class="intro-content">
+            <p>Answer 10 questions about your mood and preferences to find the ideal scent formula for you.</p>
+            <div class="scent-preview">
+                <div class="scent-option">
+                    <div class="color-dot crimson"></div>
+                    <span>CRIMSON - Energetic & Bold</span>
+                </div>
+                <div class="scent-option">
+                    <div class="color-dot azure"></div>
+                    <span>AZURE - Calm & Refreshing</span>
+                </div>
+                <div class="scent-option">
+                    <div class="color-dot amber"></div>
+                    <span>AMBER - Warm & Cozy</span>
+                </div>
+                <div class="scent-option">
+                    <div class="color-dot sage"></div>
+                    <span>SAGE - Fresh & Focused</span>
+                </div>
+            </div>
+            <button id="start-quiz-btn" class="quiz-btn primary">Start Quiz</button>
+        </div>
+    </div>
+
+    <!-- Quiz Questions -->
+    <div id="quiz-questions" class="quiz-section">
+        <div class="quiz-header">
+            <h2>Question <span id="question-number">1</span> of 10</h2>
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+        </div>
+        
+        <div class="question-content">
+            <h3 id="question-text"></h3>
+            <div id="answer-options" class="answer-options">
+                <!-- Options will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="quiz-navigation">
+            <button id="prev-btn" class="quiz-btn secondary" disabled>Previous</button>
+            <button id="next-btn" class="quiz-btn primary" disabled>Next</button>
+        </div>
+    </div>
+
+    <!-- Quiz Results -->
+    <div id="quiz-results" class="quiz-section">
+        <div class="quiz-header">
+            <h2>Your Perfect Scent Match</h2>
+        </div>
+        
+        <div class="result-content">
+            <div class="recommended-scent">
+                <div id="result-color-dot" class="color-dot large"></div>
+                <h3 id="result-scent-name"></h3>
+                <p id="result-description"></p>
+                <p class="result-mood">Perfect for: <span id="result-mood"></span></p>
+            </div>
+            
+            <div class="score-breakdown">
+                <h4>Your Preferences Breakdown:</h4>
+                <div id="score-chart" class="score-chart">
+                    <!-- Score breakdown will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="result-actions">
+                <button id="try-scent-btn" class="quiz-btn primary">Try This Scent</button>
+                <button id="retake-quiz-btn" class="quiz-btn secondary">Retake Quiz</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/quiz.js') }}"></script>
+{% endblock %}
