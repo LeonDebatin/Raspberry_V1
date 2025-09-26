@@ -171,6 +171,15 @@ class SelectionController {
                 btn.classList.remove('selected');
             }
         });
+        
+        // Handle OFF button selection when no formula is active
+        if (this.offBtn) {
+            if (!this.isActive || this.selectedFormula === null) {
+                this.offBtn.classList.add('selected');
+            } else {
+                this.offBtn.classList.remove('selected');
+            }
+        }
     }
     
     updateConfigButtons() {

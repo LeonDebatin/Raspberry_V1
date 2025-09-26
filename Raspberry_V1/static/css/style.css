@@ -239,6 +239,7 @@ body {
     transition: var(--transition);
     transform: translate(-50%, -50%);
     z-index: 5;
+    opacity: 0.8; /* Default opacity for all buttons */
 }
 
 .dot:hover {
@@ -247,8 +248,8 @@ body {
 }
 
 .dot.selected {
-    /* Remove the glowing animation to prevent visual movement */
-    opacity: 0.8;
+    /* Full opacity when selected/activated */
+    opacity: 1.0;
 }
 
 /* Button Colors & Positions */
