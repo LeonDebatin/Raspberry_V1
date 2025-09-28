@@ -256,14 +256,10 @@ class SimpleScheduleManager {
     async handleDelete() {
         if (this.editingId) {
             try {
-                console.log('HandleDelete - Starting delete operation for ID:', this.editingId);
-                
                 // Set flag to prevent duplicate navigation in deleteSchedule
                 this._deleteFromModal = true;
                 await this.deleteSchedule(this.editingId);
                 this._deleteFromModal = false;
-                
-                console.log('✅ Delete operation completed successfully');
                 
                 // Simulate cancel button click to handle navigation properly
                 this.handleCancel();
@@ -271,13 +267,12 @@ class SimpleScheduleManager {
                 // Add a small delay to ensure navigation completes, then refresh if on same page
                 setTimeout(() => {
                     if (window.location.pathname === '/schedule') {
-                        console.log('🔄 Refreshing page to show changes after delete');
                         window.location.reload();
                     }
                 }, 100);
                 
             } catch (error) {
-                console.error('❌ Error deleting schedule:', error);
+                console.error('Error deleting schedule:', error);
                 window.notifications.error('Failed to delete schedule: ' + error.message);
                 // Don't navigate on error - keep the modal open
             }
@@ -292,19 +287,12 @@ class SimpleScheduleManager {
         }
 
         try {
-            console.log('HandleSubmit - Starting operation:', {
-                editingId: this.editingId,
-                currentPath: window.location.pathname
-            });
-            
             // Perform the schedule operation
             if (this.editingId) {
                 await this.updateSchedule(this.editingId, formData);
             } else {
                 await this.createSchedule(formData);
             }
-
-            console.log('✅ Operation completed successfully');
             
             // Simulate cancel button click to handle navigation properly
             this.handleCancel();
@@ -312,13 +300,12 @@ class SimpleScheduleManager {
             // Add a small delay to ensure navigation completes, then refresh if on same page
             setTimeout(() => {
                 if (window.location.pathname === '/schedule') {
-                    console.log('🔄 Refreshing page to show changes');
                     window.location.reload();
                 }
             }, 100);
 
         } catch (error) {
-            console.error('❌ Error saving schedule:', error);
+            console.error('Error saving schedule:', error);
             window.notifications.error('Failed to save schedule: ' + error.message);
             // Don't navigate on error - keep the modal open for correction
         }
@@ -445,9 +432,8 @@ class SimpleScheduleManager {
 
             // Only handle refresh if not called from handleDelete (which handles its own navigation/refresh)
             if (!this._deleteFromModal) {
-                console.log('🔄 Refreshing UI after delete from schedule list');
-                await this.refreshUIAfterOperation();
-                console.log('✅ Delete completed, UI refreshed');
+                // Simple refresh for deletes from schedule list
+                this.loadSchedules();
             }
 
         } catch (error) {
@@ -471,19 +457,7 @@ class SimpleScheduleManager {
         }
     }
 
-    async refreshUIAfterOperation() {
-        console.log('🔄 Refreshing UI after operation');
-        try {
-            // Reload schedules data and re-render UI
-            await this.loadSchedules();
-            this.renderCalendarView();
-            
-            console.log('✅ UI refresh completed');
-        } catch (error) {
-            console.error('❌ Error refreshing UI:', error);
-            window.notifications.error('Failed to refresh display');
-        }
-    }
+
 
     handleScheduleRefresh(refreshResult) {
         if (!refreshResult) return;
@@ -531,18 +505,14 @@ class SimpleScheduleManager {
         const editId = window.editScheduleId;
         
         if (editId && !this.editParameterProcessed) {
-            console.log(`🎯 Auto-editing schedule with ID: ${editId}`);
-            
             // Find the schedule with the specified ID
             const schedule = this.schedules.find(s => s.id === editId);
             
             if (schedule) {
-                console.log(`✅ Found schedule for auto-edit:`, schedule);
                 // Auto-edit this schedule
                 this.editSchedule(schedule.id);
                 this.editParameterProcessed = true; // Prevent re-processing
             } else {
-                console.warn(`❌ Schedule with ID ${editId} not found`);
                 window.notifications.error(`Schedule not found`);
             }
         }

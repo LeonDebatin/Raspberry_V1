@@ -914,10 +914,7 @@ def refresh_current_schedule():
         # Get current GPIO status
         gpio_status = gpio_controller.get_status()
         
-        # Log for debugging
-        app.logger.info(f"Schedule refresh check at {current_time}")
-        app.logger.info(f"Target schedule: {target_schedule.get('formula') if target_schedule else 'None'}")
-        app.logger.info(f"Current GPIO active: {gpio_status.get('active')} ({gpio_status.get('active_formula')})")
+
         
         if target_schedule:
             # A schedule should be active
@@ -947,7 +944,6 @@ def refresh_current_schedule():
                 
                 # Don't start if less than 30 seconds remaining
                 if remaining_seconds < 30:
-                    app.logger.info(f"Schedule {target_formula} has less than 30s remaining, not starting")
                     return {
                         "status": "schedule_expired", 
                         "message": "Schedule time has already passed or expires too soon"
@@ -965,7 +961,6 @@ def refresh_current_schedule():
                 )
                 
                 if success:
-                    app.logger.info(f"Started scheduled formula: {target_formula} ({target_schedule['start_time']}-{target_schedule['end_time']}) for {remaining_minutes:.1f} minutes")
                     return {
                         "status": "schedule_started",
                         "active_schedule": target_schedule,
@@ -974,7 +969,6 @@ def refresh_current_schedule():
                         "message": f"Started scheduled {target_formula} formula"
                     }
                 else:
-                    app.logger.error(f"Failed to start scheduled formula: {target_formula}")
                     return {
                         "status": "error",
                         "message": "Failed to start scheduled formula"
@@ -991,7 +985,6 @@ def refresh_current_schedule():
             # No schedule should be active - stop any scheduled activity
             if gpio_status.get("active") and gpio_status.get("is_scheduled"):
                 gpio_controller.stop_all()
-                app.logger.info("Stopped scheduled activities - no schedule should be active")
                 return {
                     "status": "stopped_activities",
                     "message": "Stopped scheduled activities - no schedule should be active"
