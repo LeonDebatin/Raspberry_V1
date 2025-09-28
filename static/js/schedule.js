@@ -18,6 +18,7 @@ class SimpleScheduleManager {
     init() {
         console.log('Initializing SimpleScheduleManager');
         this.bindEvents();
+        this.setupStrengthSlider();
         this.loadSchedules();
         // Start with daily view and render immediately
         this.switchView('daily');
@@ -103,6 +104,17 @@ class SimpleScheduleManager {
 
     }
 
+    setupStrengthSlider() {
+        const strengthSlider = document.getElementById('strength-slider');
+        const strengthValue = document.getElementById('strength-seconds');
+        
+        if (strengthSlider && strengthValue) {
+            strengthSlider.addEventListener('input', (e) => {
+                strengthValue.textContent = e.target.value;
+            });
+        }
+    }
+
     showAddModal() {
         console.log('Showing add modal');
         this.editingId = null;
@@ -150,16 +162,24 @@ class SimpleScheduleManager {
         document.getElementById('end-time').value = schedule.end_time || '';
         document.getElementById('formula').value = schedule.formula || '';
         document.getElementById('recurrence').value = schedule.recurrence || 'daily';
-        document.getElementById('cycle-time').value = schedule.cycle_time || 60;
-        document.getElementById('duration').value = schedule.duration || 10;
+        const strengthSlider = document.getElementById('strength-slider');
+        const strengthValue = document.getElementById('strength-seconds');
+        if (strengthSlider && strengthValue) {
+            strengthSlider.value = schedule.duration || 10;
+            strengthValue.textContent = schedule.duration || 10;
+        }
     }
 
     resetForm() {
         document.getElementById('schedule-form').reset();
         document.getElementById('schedule-id').value = '';
         document.getElementById('recurrence').value = 'daily';
-        document.getElementById('cycle-time').value = '60';
-        document.getElementById('duration').value = '10';
+        const strengthSlider = document.getElementById('strength-slider');
+        const strengthValue = document.getElementById('strength-seconds');
+        if (strengthSlider && strengthValue) {
+            strengthSlider.value = 10;
+            strengthValue.textContent = 10;
+        }
     }
 
     hideModal() {
@@ -198,13 +218,14 @@ class SimpleScheduleManager {
     }
 
     getFormData() {
+        const strengthSlider = document.getElementById('strength-slider');
         return {
             start_time: document.getElementById('start-time').value,
             end_time: document.getElementById('end-time').value,
             formula: document.getElementById('formula').value,
             recurrence: document.getElementById('recurrence').value,
-            cycle_time: parseInt(document.getElementById('cycle-time').value),
-            duration: parseInt(document.getElementById('duration').value)
+            cycle_time: 60, // Fixed at 60 seconds
+            duration: parseInt(strengthSlider ? strengthSlider.value : 10)
         };
     }
 
@@ -351,7 +372,7 @@ class SimpleScheduleManager {
                 
                 <div class="schedule-details">
                     <span class="schedule-recurrence">${this.getRecurrenceName(schedule.recurrence)}</span>
-                    <span class="schedule-params">Cycle: ${schedule.cycle_time}s | Duration: ${schedule.duration}s</span>
+                    <span class="schedule-params">Strength: ${schedule.duration || 10}s of 60s</span>
                 </div>
                 
                 <div class="schedule-actions">
@@ -733,7 +754,6 @@ class SimpleScheduleManager {
             event.innerHTML = `
                 <div class="schedule-event-time">${this.formatTime(startTime)}-${this.formatTime(endTime)}</div>
                 <div class="schedule-event-formula">${this.getFormulaName(schedule.formula)}</div>
-                <div class="schedule-event-edit-hint">Click to edit</div>
             `;
         }
         

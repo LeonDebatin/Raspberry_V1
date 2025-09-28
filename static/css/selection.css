@@ -119,7 +119,7 @@
 
 .progress-bg {
     fill: none;
-    stroke: var(--border);
+    stroke: white;
     stroke-width: 8;
     opacity: 0.6;
 }

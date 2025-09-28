@@ -155,16 +155,17 @@
 .time-grid {
     display: grid;
     grid-template-columns: 80px 1fr;
-    gap: 1px;
     background: var(--border);
     border-radius: 10px;
     overflow: hidden;
+    border: 1px solid var(--border);
 }
 
 .time-labels {
     background: var(--bg-medium);
     display: flex;
     flex-direction: column;
+    border-right: 1px solid var(--border);
 }
 
 .time-slots {
@@ -180,6 +181,8 @@
     color: var(--text-light);
     background: var(--bg-medium);
     height: 60px;
+    min-height: 60px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -192,16 +195,19 @@
 
 .time-slot {
     height: 60px;
+    min-height: 60px;
+    box-sizing: border-box;
     position: relative;
     background: white;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    justify-content: flex-start;
+    gap: 0;
+    justify-content: stretch;
     align-items: stretch;
     border-bottom: 1px solid var(--border);
+    margin: 0;
 }
 
 .time-slot:last-child {
@@ -216,10 +222,10 @@
 .daily-event {
     background: var(--red);
     color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 5px;
+    padding: 0.5rem;
+    border-radius: 3px;
     font-size: 0.75rem;
-    margin-bottom: 0.25rem;
+    margin: 0;
     cursor: pointer;
     transition: var(--transition);
     position: relative;
@@ -227,12 +233,16 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0.25rem;
+    height: 100%;
+    flex: 1;
 }
 
 .daily-event:hover {
-    transform: scale(1.02);
+    transform: scale(1.01);
     box-shadow: var(--shadow);
 }
 
@@ -560,6 +570,63 @@
     background: white;
 }
 
+/* Strength Slider */
+.slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.strength-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+.strength-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.strength-slider::-webkit-slider-thumb:hover {
+    background: var(--success);
+    transform: scale(1.1);
+}
+
+.strength-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+}
+
+.strength-slider::-moz-range-thumb:hover {
+    background: var(--success);
+    transform: scale(1.1);
+}
+
+.slider-value {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
 .form-actions {
     display: flex;
     gap: 1rem;
@@ -701,17 +768,23 @@
         padding: 0.75rem 0.25rem;
         font-size: 0.75rem;
         height: 50px;
+        min-height: 50px;
+        box-sizing: border-box;
     }
     
     .time-slot {
         height: 50px;
-        padding: 0.15rem;
+        min-height: 50px;
+        box-sizing: border-box;
+        padding: 0;
     }
     
     .daily-event {
         font-size: 0.65rem;
-        padding: 0.15rem 0.35rem;
-        margin-bottom: 0.15rem;
+        padding: 0.3rem;
+        margin: 0;
+        height: 100%;
+        gap: 0.15rem;
     }
     
     .daily-event-time {
@@ -832,17 +905,23 @@
         padding: 0.5rem 0.1rem;
         font-size: 0.6rem;
         height: 40px;
+        min-height: 40px;
+        box-sizing: border-box;
     }
     
     .time-slot {
         height: 40px;
-        padding: 0.1rem;
+        min-height: 40px;
+        box-sizing: border-box;
+        padding: 0;
     }
     
     .daily-event {
         font-size: 0.55rem;
-        padding: 0.1rem 0.25rem;
-        margin-bottom: 0.1rem;
+        padding: 0.2rem;
+        margin: 0;
+        height: 100%;
+        gap: 0.1rem;
     }
     
     .daily-event-time {
