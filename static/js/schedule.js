@@ -19,10 +19,15 @@ class SimpleScheduleManager {
         console.log('Initializing SimpleScheduleManager');
         this.bindEvents();
         this.setupStrengthSlider();
-        this.loadSchedules();
-        // Start with daily view and render immediately
-        this.switchView('daily');
-        this.renderCalendarView();
+        this.setupRecurrenceHandler();
+        this.loadSchedules().then(() => {
+            // Start with daily view and render immediately
+            this.switchView('daily');
+            this.renderCalendarView();
+            
+            // Check for edit parameter in URL
+            this.checkForEditParameter();
+        });
     }
 
     bindEvents() {
@@ -113,24 +118,26 @@ class SimpleScheduleManager {
                 strengthValue.textContent = e.target.value;
             });
         }
+    }
 
-        // Handle recurrence change to show/hide date field
+    setupRecurrenceHandler() {
         const recurrenceSelect = document.getElementById('recurrence');
         const dateGroup = document.getElementById('date-group');
-        const dateInput = document.getElementById('schedule-date');
+        const scheduleDate = document.getElementById('schedule-date');
         
-        if (recurrenceSelect && dateGroup && dateInput) {
+        if (recurrenceSelect && dateGroup && scheduleDate) {
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            scheduleDate.setAttribute('min', today);
+            scheduleDate.value = today; // Default to today
+            
             recurrenceSelect.addEventListener('change', (e) => {
                 if (e.target.value === 'once') {
                     dateGroup.style.display = 'block';
-                    dateInput.required = true;
-                    // Set default to today
-                    const today = new Date().toISOString().split('T')[0];
-                    dateInput.value = today;
+                    scheduleDate.required = true;
                 } else {
                     dateGroup.style.display = 'none';
-                    dateInput.required = false;
-                    dateInput.value = '';
+                    scheduleDate.required = false;
                 }
             });
         }
@@ -184,21 +191,18 @@ class SimpleScheduleManager {
         document.getElementById('formula').value = schedule.formula || '';
         document.getElementById('recurrence').value = schedule.recurrence || 'daily';
         
-        // Handle date field for one-time events
+        // Handle date field for one-time schedules
         const dateGroup = document.getElementById('date-group');
-        const dateInput = document.getElementById('schedule-date');
+        const scheduleDate = document.getElementById('schedule-date');
         if (schedule.recurrence === 'once') {
-            if (dateGroup && dateInput) {
-                dateGroup.style.display = 'block';
-                dateInput.required = true;
-                dateInput.value = schedule.schedule_date || '';
+            if (dateGroup) dateGroup.style.display = 'block';
+            if (scheduleDate) {
+                scheduleDate.required = true;
+                scheduleDate.value = schedule.schedule_date || new Date().toISOString().split('T')[0];
             }
         } else {
-            if (dateGroup && dateInput) {
-                dateGroup.style.display = 'none';
-                dateInput.required = false;
-                dateInput.value = '';
-            }
+            if (dateGroup) dateGroup.style.display = 'none';
+            if (scheduleDate) scheduleDate.required = false;
         }
         
         const strengthSlider = document.getElementById('strength-slider');
@@ -214,13 +218,13 @@ class SimpleScheduleManager {
         document.getElementById('schedule-id').value = '';
         document.getElementById('recurrence').value = 'daily';
         
-        // Hide date field
+        // Reset date field
         const dateGroup = document.getElementById('date-group');
-        const dateInput = document.getElementById('schedule-date');
-        if (dateGroup && dateInput) {
-            dateGroup.style.display = 'none';
-            dateInput.required = false;
-            dateInput.value = '';
+        const scheduleDate = document.getElementById('schedule-date');
+        if (dateGroup) dateGroup.style.display = 'none';
+        if (scheduleDate) {
+            scheduleDate.required = false;
+            scheduleDate.value = new Date().toISOString().split('T')[0];
         }
         
         const strengthSlider = document.getElementById('strength-slider');
@@ -269,6 +273,8 @@ class SimpleScheduleManager {
     getFormData() {
         const strengthSlider = document.getElementById('strength-slider');
         const recurrence = document.getElementById('recurrence').value;
+        const scheduleDate = document.getElementById('schedule-date');
+        
         const data = {
             start_time: document.getElementById('start-time').value,
             end_time: document.getElementById('end-time').value,
@@ -278,9 +284,9 @@ class SimpleScheduleManager {
             duration: parseInt(strengthSlider ? strengthSlider.value : 10)
         };
         
-        // Add date for one-time events
-        if (recurrence === 'once') {
-            data.schedule_date = document.getElementById('schedule-date').value;
+        // Add date for one-time schedules
+        if (recurrence === 'once' && scheduleDate && scheduleDate.value) {
+            data.schedule_date = scheduleDate.value;
         }
         
         return data;
@@ -388,6 +394,27 @@ class SimpleScheduleManager {
         }
     }
 
+    checkForEditParameter() {
+        // Check if template provided an edit schedule ID
+        const editId = window.editScheduleId;
+        
+        if (editId) {
+            console.log(`Auto-editing schedule with ID: ${editId}, available schedules:`, this.schedules.map(s => s.id));
+            
+            // Find the schedule with the specified ID
+            const schedule = this.schedules.find(s => s.id === editId);
+            
+            if (schedule) {
+                console.log(`Found schedule:`, schedule);
+                // Auto-edit this schedule
+                this.editSchedule(schedule.id);
+            } else {
+                console.warn(`Schedule with ID ${editId} not found in:`, this.schedules);
+                window.notifications.error(`Schedule not found`);
+            }
+        }
+    }
+
     renderSchedules() {
         const container = document.getElementById('schedule-list');
         if (!container) return;
@@ -428,10 +455,7 @@ class SimpleScheduleManager {
                 </div>
                 
                 <div class="schedule-details">
-                    <span class="schedule-recurrence">
-                        ${this.getRecurrenceName(schedule.recurrence)}
-                        ${schedule.recurrence === 'once' && schedule.schedule_date ? ` - ${this.formatDate(schedule.schedule_date)}` : ''}
-                    </span>
+                    <span class="schedule-recurrence">${this.getRecurrenceName(schedule.recurrence)}</span>
                     <span class="schedule-params">Strength: ${schedule.duration || 10}s of 60s</span>
                 </div>
                 
@@ -464,7 +488,7 @@ class SimpleScheduleManager {
 
     getRecurrenceName(recurrence) {
         const names = {
-            once: 'One Time',
+            once: 'One-Time Only',
             daily: 'Daily',
             weekdays: 'Weekdays',
             weekends: 'Weekends',
@@ -477,17 +501,6 @@ class SimpleScheduleManager {
             sunday: 'Sundays'
         };
         return names[recurrence] || recurrence;
-    }
-
-    formatDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            weekday: 'short',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
     }
 
     // Calendar functionality
@@ -841,6 +854,18 @@ class SimpleScheduleManager {
             const recurrence = schedule.recurrence || 'daily';
             
             switch (recurrence) {
+                case 'once':
+                    // One-time schedules show only on their specified date (and only if not executed)
+                    if (schedule.executed) return false;
+                    
+                    if (schedule.schedule_date) {
+                        const scheduleDate = new Date(schedule.schedule_date + 'T00:00:00');
+                        return date.toDateString() === scheduleDate.toDateString();
+                    } else {
+                        // Fallback for old one-time schedules without date
+                        const today = new Date();
+                        return date.toDateString() === today.toDateString();
+                    }
                 case 'daily':
                     return true;
                 case 'weekdays':

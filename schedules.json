@@ -1,20 +1,10 @@
 {
   "schedules": [
     {
-      "id": 6,
-      "start_time": "03:00",
-      "end_time": "04:00",
+      "id": 1,
+      "start_time": "16:10",
+      "end_time": "17:00",
       "formula": "yellow",
-      "cycle_time": 60,
-      "duration": 10,
-      "recurrence": "monday",
-      "enabled": true
-    },
-    {
-      "id": 8,
-      "start_time": "14:42",
-      "end_time": "15:00",
-      "formula": "blue",
       "cycle_time": 60,
       "duration": 10,
       "recurrence": "daily",

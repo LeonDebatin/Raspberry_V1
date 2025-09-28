@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 import json
 import os
 from datetime import datetime, timedelta
@@ -77,6 +77,32 @@ def schedule():
     return render_template("schedule.html")
 
 
+@app.route("/schedule/<int:schedule_id>")
+def edit_schedule(schedule_id):
+    """Edit specific schedule page"""
+    try:
+        # Load schedules to check if the ID exists
+        schedules_data = load_schedules()
+        schedule = None
+        
+        for s in schedules_data.get("schedules", []):
+            if s.get("id") == schedule_id:
+                schedule = s
+                break
+        
+        if not schedule:
+            # If schedule doesn't exist, redirect to main schedule page
+            return redirect("/schedule")
+        
+        # Render the schedule template and pass the schedule ID
+        # The frontend JavaScript will detect this and auto-edit the schedule
+        return render_template("schedule.html", edit_schedule_id=schedule_id)
+        
+    except Exception as e:
+        app.logger.error(f"Error loading schedule {schedule_id}: {e}")
+        return redirect("/schedule")
+
+
 @app.route("/quiz")
 def quiz():
     """Scent preference quiz page"""
@@ -146,7 +172,6 @@ def get_status():
     """Get current GPIO pin states"""
     try:
         status = gpio_controller.get_status()
-        app.logger.info(f"🔍 Status response: active_formula={status.get('active_formula')}, cycle_start_time={status.get('cycle_start_time')}")
         return jsonify(status)
     except Exception as e:
         app.logger.error(f"Error getting status: {e}")
@@ -203,6 +228,9 @@ def get_schedule_status():
         # Find currently active schedule
         active_schedule = find_active_schedule_for_time(schedules_data, current_time)
 
+        # Get GPIO status for correlation
+        gpio_status = gpio_controller.get_status()
+
         # Find next upcoming schedule
         next_schedule = None
         current_datetime = datetime.now()
@@ -235,7 +263,7 @@ def get_schedule_status():
                     if next_schedule
                     else None
                 ),
-                "gpio_status": gpio_controller.get_status(),
+                "gpio_status": gpio_status,
             }
         )
     except Exception as e:
@@ -280,8 +308,8 @@ def create_schedule():
             "enabled": True,
         }
         
-        # Add schedule_date for one-time events
-        if data.get("recurrence") == "once":
+        # Add schedule_date for one-time schedules
+        if data.get("recurrence") == "once" and data.get("schedule_date"):
             new_schedule["schedule_date"] = data.get("schedule_date")
 
         # Check for overlapping schedules
@@ -354,12 +382,9 @@ def update_schedule(schedule_id):
             "enabled": data.get("enabled", target_schedule.get("enabled", True)),
         }
         
-        # Add schedule_date for one-time events
-        if data.get("recurrence") == "once":
-            updated_schedule["schedule_date"] = data.get("schedule_date")
-        elif target_schedule.get("schedule_date"):
-            # Remove schedule_date if changing from once to recurring
-            pass  # Don't include it in updated_schedule
+        # Handle schedule_date for one-time schedules
+        if updated_schedule["recurrence"] == "once":
+            updated_schedule["schedule_date"] = data.get("schedule_date", target_schedule.get("schedule_date"))
 
         # Validate the updated schedule data
         validation_error = validate_schedule_data(updated_schedule)
@@ -547,14 +572,22 @@ def should_activate_schedule(schedule):
     """Check if schedule should activate based on recurrence pattern"""
     now = datetime.now()
     current_day = now.strftime("%A").lower()
-    today_date = now.strftime("%Y-%m-%d")
 
     recurrence = schedule.get("recurrence", "daily")
 
     if recurrence == "once":
-        # For one-time events, check if it's the scheduled date
+        # One-time schedule: check if it has already been executed
+        if schedule.get("executed", False):
+            return False  # Already executed, don't run again
+        
+        # Check if it's the correct date
         schedule_date = schedule.get("schedule_date")
-        return schedule_date == today_date
+        if schedule_date:
+            today = now.strftime("%Y-%m-%d")
+            if schedule_date != today:
+                return False  # Not the right date yet/anymore
+        
+        return True  # Not executed yet and it's the right date
     elif recurrence == "daily":
         return True
     elif recurrence == "weekdays" and current_day in [
@@ -571,6 +604,25 @@ def should_activate_schedule(schedule):
         return True
 
     return False
+
+
+def mark_schedule_as_executed(schedule_id):
+    """Mark a one-time schedule as executed and disable it"""
+    try:
+        schedules_data = load_schedules()
+        schedules = schedules_data.get("schedules", [])
+        
+        for schedule in schedules:
+            if schedule.get("id") == schedule_id:
+                schedule["executed"] = True
+                schedule["enabled"] = False  # Disable the schedule
+                break
+        
+        save_schedules(schedules_data)
+        app.logger.info(f"Schedule {schedule_id} marked as executed and disabled")
+        
+    except Exception as e:
+        app.logger.error(f"Error marking schedule {schedule_id} as executed: {e}")
 
 
 def is_time_in_range(current_time, start_time, end_time):
@@ -738,6 +790,11 @@ def validate_schedule_data(data):
     for field in required_fields:
         if not data.get(field):
             return f"Missing required field: {field}"
+    
+    # For one-time schedules, schedule_date is required
+    if data.get("recurrence") == "once" and not data.get("schedule_date"):
+        app.logger.error(f"One-time schedule validation failed - missing date. Data: {data}")
+        return "Schedule date is required for one-time schedules"
 
     # Validate and normalize time format
     def normalize_time(time_str):
@@ -778,6 +835,7 @@ def validate_schedule_data(data):
 
     # Validate recurrence
     valid_recurrences = [
+        "once",
         "daily",
         "weekdays",
         "weekends",
@@ -818,29 +876,18 @@ def wait_for_next_minute():
 
 def find_active_schedule_for_time(schedules_data, current_time):
     """Find which schedule should be active at the given time"""
-    app.logger.debug(f"Checking schedules for time {current_time}")
-    
     for schedule in schedules_data.get("schedules", []):
-        schedule_id = schedule.get("id", "unknown")
-        
-        # Debug each condition
-        enabled = schedule.get("enabled", False)
-        should_activate = should_activate_schedule(schedule)
-        has_start_time = bool(schedule.get("start_time"))
-        has_end_time = bool(schedule.get("end_time"))
-        different_times = schedule.get("start_time") != schedule.get("end_time")
-        
-        app.logger.debug(f"Schedule {schedule_id}: enabled={enabled}, should_activate={should_activate}, has_times={has_start_time and has_end_time}, different_times={different_times}")
-        
-        if enabled and should_activate and has_start_time and has_end_time and different_times:
-            in_range = is_time_in_range(current_time, schedule["start_time"], schedule["end_time"])
-            app.logger.debug(f"Schedule {schedule_id}: in_time_range={in_range} ({schedule['start_time']}-{schedule['end_time']})")
-            
-            if in_range:
-                app.logger.info(f"Active schedule found: {schedule_id} - {schedule['formula']}")
+        if (
+            schedule.get("enabled")
+            and should_activate_schedule(schedule)
+            and schedule.get("start_time")
+            and schedule.get("end_time")
+            and schedule.get("start_time") != schedule.get("end_time")
+        ):
+            if is_time_in_range(
+                current_time, schedule["start_time"], schedule["end_time"]
+            ):
                 return schedule
-                
-    app.logger.debug("No active schedule found")
     return None
 
 
@@ -856,33 +903,11 @@ def schedule_monitor():
         try:
             schedules_data = load_schedules()
             current_time = datetime.now().strftime("%H:%M")
-            current_datetime = datetime.now()
-            
-            # Clean up expired one-time events (older than today)
-            today_date = current_datetime.strftime("%Y-%m-%d")
-            original_count = len(schedules_data["schedules"])
-            schedules_data["schedules"] = [
-                schedule for schedule in schedules_data["schedules"]
-                if not (schedule.get("recurrence") == "once" and 
-                       schedule.get("schedule_date") and 
-                       schedule.get("schedule_date") < today_date)
-            ]
-            
-            # Save if we cleaned up any expired schedules
-            if len(schedules_data["schedules"]) < original_count:
-                save_schedules(schedules_data)
-                app.logger.info(f"Cleaned up {original_count - len(schedules_data['schedules'])} expired one-time events")
 
             # Find which schedule should be active right now
             target_schedule = find_active_schedule_for_time(
                 schedules_data, current_time
             )
-            
-            # Debug logging
-            if target_schedule:
-                app.logger.info(f"Schedule monitor: Found active schedule at {current_time}: {target_schedule['formula']} ({target_schedule['start_time']}-{target_schedule['end_time']})")
-            else:
-                app.logger.debug(f"Schedule monitor: No active schedule at {current_time}")
 
             # Determine what action to take
             if target_schedule:
@@ -923,6 +948,11 @@ def schedule_monitor():
                         app.logger.info(
                             f"Started scheduled formula: {target_formula} ({target_schedule['start_time']}-{target_schedule['end_time']}) for {schedule_duration}s"
                         )
+                        
+                        # Mark one-time schedules as executed and disable them
+                        if target_schedule.get("recurrence") == "once":
+                            mark_schedule_as_executed(target_schedule["id"])
+                            app.logger.info(f"One-time schedule {schedule_id} marked as executed and disabled")
                     else:
                         app.logger.error(
                             f"Failed to start scheduled formula: {target_formula}"
@@ -964,7 +994,6 @@ def schedule_monitor():
 # Start schedule monitor thread
 schedule_thread = threading.Thread(target=schedule_monitor, daemon=True)
 schedule_thread.start()
-app.logger.info("Schedule monitor thread started")
 
 if __name__ == "__main__":
     try:
