@@ -12,7 +12,16 @@
     <nav class="navbar">
         <div class="nav-container">
             <h1 class="nav-title">Scent Controller</h1>
-            <div class="nav-links">
+            
+            <!-- Burger Menu Button (Mobile Only) -->
+            <button class="burger-menu" id="burger-menu" aria-label="Toggle navigation">
+                <span class="burger-line"></span>
+                <span class="burger-line"></span>
+                <span class="burger-line"></span>
+            </button>
+            
+            <!-- Navigation Links -->
+            <div class="nav-links" id="nav-links">
                 <a href="{{ url_for('selection') }}" class="nav-link {% if request.endpoint == 'selection' %}active{% endif %}">
                     Selection
                 </a>
@@ -26,6 +35,9 @@
                     Information
                 </a>
             </div>
+            
+            <!-- Mobile Navigation Overlay -->
+            <div class="nav-overlay" id="nav-overlay"></div>
         </div>
     </nav>
     
