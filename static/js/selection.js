@@ -238,11 +238,52 @@ class SelectionController {
     async loadStatus() {
         try {
             const status = await window.api.get('/api/status');
+            console.log('🔍 loadStatus received status:', status);
+            console.log('🔍 active_formula:', status.active_formula);
+            console.log('🔍 condition result:', status.active_formula && status.active_formula !== 'off');
             
             if (status.active_formula && status.active_formula !== 'off') {
+                console.log('✅ Calling synchronizeWithBackend from loadStatus');
                 // Always synchronize with backend - this is the single source of truth
-                this.synchronizeWithBackend(status);
+                await this.synchronizeWithBackend(status);
             } else {
+                console.log('❌ NOT calling synchronizeWithBackend - formula is:', status.active_formula);
+                // Fallback: Check if there's an active schedule even when status shows no active formula
+                console.log('🔍 Checking for active schedule as fallback...');
+                try {
+                    const scheduleStatus = await window.api.get('/api/schedule-status');
+                    console.log('📡 Schedule status fallback response:', scheduleStatus);
+                    
+                    if (scheduleStatus.active_schedule) {
+                        console.log('✅ Found active schedule, showing info for:', scheduleStatus.active_schedule.formula);
+                        // Show schedule information and scent description
+                        this.showScheduleInfo(scheduleStatus.active_schedule);
+                        this.showScentDescription(scheduleStatus.active_schedule.formula);
+                        
+                        // Update UI to show the active formula
+                        this.selectedFormula = scheduleStatus.active_schedule.formula;
+                        this.isActive = true;
+                        this.updateFormulaButtons();
+                        this.updateConfigButtons();
+                        this.updateStatus(`${getFormulaDisplayName(scheduleStatus.active_schedule.formula)} Active (Scheduled)`, true);
+                    } else {
+                        console.log('❌ No active schedule found in fallback');
+                        // Reset UI to ready state
+                        this.selectedFormula = null;
+                        this.isActive = false;
+                        this.updateFormulaButtons();
+                        this.updateStatus('Ready', false);
+                        this.hideScheduleInfo();
+                    }
+                } catch (error) {
+                    console.error('Error in schedule fallback check:', error);
+                    // Reset UI to ready state on error
+                    this.selectedFormula = null;
+                    this.isActive = false;
+                    this.updateFormulaButtons();
+                    this.updateStatus('Ready', false);
+                    this.hideScheduleInfo();
+                }
                 this.selectedFormula = null;
                 this.isActive = false;
                 this.updateFormulaButtons();
@@ -490,19 +531,22 @@ class SelectionController {
         this.lastCycleProgress = 0;
     }
     
-    updateProgressFromStatus(status) {
+    async updateProgressFromStatus(status) {
         // Update progress circle based on current status
         if (status.active_formula && status.active_formula !== 'off') {
             // Synchronize with backend cycle timing
-            this.synchronizeWithBackend(status);
+            await this.synchronizeWithBackend(status);
         } else {
             this.stopProgressCircle();
         }
     }
     
-    synchronizeWithBackend(status) {
+    async synchronizeWithBackend(status) {
+        console.log('🔍 synchronizeWithBackend called with status:', status);
+        
         // Use backend as single source of truth for cycle timing
         if (status.cycle_start_time && status.current_cycle_time && status.current_duration) {
+            console.log('✅ Cycle timing available, synchronizing...');
             // Update local settings to match backend
             this.cycleTime = status.current_cycle_time;
             // Update diffusion duration from backend
@@ -539,7 +583,20 @@ class SelectionController {
             // Update UI elements
             this.updateFormulaButtons();
             this.updateConfigButtons();
-            this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active`, true);
+            
+            // Check for schedule information when a formula is active
+            console.log('🔍 Calling loadScheduleInfo for formula:', status.active_formula);
+            const isScheduled = await this.loadScheduleInfo(status.active_formula);
+            console.log('📅 Schedule check result:', isScheduled);
+            
+            if (isScheduled) {
+                this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active (Scheduled)`, true);
+            } else {
+                this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active`, true);
+            }
+            
+            // Always show scent description when active
+            this.showScentDescription(status.active_formula);
         } else {
             console.log('⚠️ Backend cycle timing not available, using fallback method');
             // Fallback to old method if backend doesn't provide cycle timing
@@ -559,6 +616,26 @@ class SelectionController {
                 
                 this.startProgressCircle(status.active_formula, isScheduled, scheduleDuration);
             }
+            
+            // Always check for schedule information and show scent description when a formula is active
+            console.log('🔍 Calling loadScheduleInfo for formula (fallback path):', status.active_formula);
+            const isScheduled = await this.loadScheduleInfo(status.active_formula);
+            console.log('📅 Schedule check result (fallback path):', isScheduled);
+            
+            if (isScheduled) {
+                this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active (Scheduled)`, true);
+            } else {
+                this.updateStatus(`${getFormulaDisplayName(status.active_formula)} Active`, true);
+            }
+            
+            // Always show scent description when active (fallback path)
+            this.showScentDescription(status.active_formula);
+            
+            // Update UI elements (fallback path)
+            this.selectedFormula = status.active_formula;
+            this.isActive = true;
+            this.updateFormulaButtons();
+            this.updateConfigButtons();
         }
     }
     
@@ -848,6 +925,109 @@ class KeyboardShortcuts {
                     break;
             }
         });
+    }
+    // Schedule Information Methods
+    async loadScheduleInfo(activeFormula) {
+        console.log('🔍 loadScheduleInfo called for formula:', activeFormula);
+        try {
+            const scheduleStatus = await window.api.get('/api/schedule-status');
+            console.log('📡 Schedule status response:', scheduleStatus);
+            
+            if (scheduleStatus.active_schedule && scheduleStatus.active_schedule.formula === activeFormula) {
+                this.showScheduleInfo(scheduleStatus.active_schedule);
+                return true; // Return true if schedule is active
+            } else {
+                this.hideScheduleInfo();
+                return false; // Return false if no schedule is active
+            }
+        } catch (error) {
+            console.error('Error loading schedule info:', error);
+            this.hideScheduleInfo();
+            return false; // Return false on error
+        }
+    }
+    
+    showScheduleInfo(schedule) {
+        const scheduleInfo = document.getElementById('schedule-info');
+        const scheduleName = document.getElementById('schedule-name');
+        const scheduleTime = document.getElementById('schedule-time');
+        
+        if (scheduleInfo && scheduleName && scheduleTime) {
+            // Format schedule display name
+            const formulaName = getFormulaDisplayName(schedule.formula);
+            const recurrenceName = this.getRecurrenceName(schedule.recurrence);
+            const scheduleDisplayName = `${formulaName} - ${recurrenceName}`;
+            
+            // Format time display
+            const timeDisplay = `${this.formatTime(schedule.start_time)} - ${this.formatTime(schedule.end_time)}`;
+            
+            scheduleName.textContent = scheduleDisplayName;
+            scheduleTime.textContent = timeDisplay;
+            
+            scheduleInfo.classList.remove('hidden');
+        }
+    }
+    
+    hideScheduleInfo() {
+        const scheduleInfo = document.getElementById('schedule-info');
+        if (scheduleInfo) {
+            scheduleInfo.classList.add('hidden');
+        }
+    }
+    
+    showScentDescription(formula) {
+        const scentDescription = document.getElementById('scent-description');
+        const scentName = document.getElementById('scent-name');
+        const scentDescriptionText = document.getElementById('scent-description-text');
+        
+        if (scentDescription && scentName && scentDescriptionText) {
+            const formulaName = getFormulaDisplayName(formula);
+            const description = this.scentDescriptions[formula] || 'Premium scent diffusion experience.';
+            
+            scentName.textContent = formulaName;
+            scentDescriptionText.textContent = description;
+            
+            // Remove existing color classes
+            scentDescription.classList.remove('amber', 'sage', 'azure', 'crimson');
+            // Add new color class based on formula
+            if (formula !== 'off') {
+                const colorClass = formula === 'yellow' ? 'amber' : 
+                                 formula === 'green' ? 'sage' :
+                                 formula === 'blue' ? 'azure' :
+                                 formula === 'red' ? 'crimson' : '';
+                if (colorClass) {
+                    scentDescription.classList.add(colorClass);
+                }
+            }
+            
+            scentDescription.classList.remove('hidden');
+        }
+    }
+    
+    getRecurrenceName(recurrence) {
+        const names = {
+            once: 'One Time',
+            daily: 'Daily',
+            weekdays: 'Weekdays',
+            weekends: 'Weekends', 
+            monday: 'Mondays',
+            tuesday: 'Tuesdays',
+            wednesday: 'Wednesdays',
+            thursday: 'Thursdays',
+            friday: 'Fridays',
+            saturday: 'Saturdays',
+            sunday: 'Sundays'
+        };
+        return names[recurrence] || recurrence;
+    }
+    
+    formatTime(timeString) {
+        if (!timeString) return '';
+        const [hours, minutes] = timeString.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
     }
 }
 

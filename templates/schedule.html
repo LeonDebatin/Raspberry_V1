@@ -107,6 +107,7 @@
                 <div class="form-group">
                     <label for="recurrence">Recurrence</label>
                     <select id="recurrence" required>
+                        <option value="once">One Time Only</option>
                         <option value="daily">Daily</option>
                         <option value="weekdays">Weekdays Only</option>
                         <option value="weekends">Weekends Only</option>
@@ -118,6 +119,11 @@
                         <option value="saturday">Saturdays</option>
                         <option value="sunday">Sundays</option>
                     </select>
+                </div>
+                
+                <div class="form-group" id="date-group" style="display: none;">
+                    <label for="schedule-date">Date</label>
+                    <input type="date" id="schedule-date">
                 </div>
                 
                 <div class="form-group">

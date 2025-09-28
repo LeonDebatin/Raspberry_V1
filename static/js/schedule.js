@@ -113,6 +113,27 @@ class SimpleScheduleManager {
                 strengthValue.textContent = e.target.value;
             });
         }
+
+        // Handle recurrence change to show/hide date field
+        const recurrenceSelect = document.getElementById('recurrence');
+        const dateGroup = document.getElementById('date-group');
+        const dateInput = document.getElementById('schedule-date');
+        
+        if (recurrenceSelect && dateGroup && dateInput) {
+            recurrenceSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'once') {
+                    dateGroup.style.display = 'block';
+                    dateInput.required = true;
+                    // Set default to today
+                    const today = new Date().toISOString().split('T')[0];
+                    dateInput.value = today;
+                } else {
+                    dateGroup.style.display = 'none';
+                    dateInput.required = false;
+                    dateInput.value = '';
+                }
+            });
+        }
     }
 
     showAddModal() {
@@ -162,6 +183,24 @@ class SimpleScheduleManager {
         document.getElementById('end-time').value = schedule.end_time || '';
         document.getElementById('formula').value = schedule.formula || '';
         document.getElementById('recurrence').value = schedule.recurrence || 'daily';
+        
+        // Handle date field for one-time events
+        const dateGroup = document.getElementById('date-group');
+        const dateInput = document.getElementById('schedule-date');
+        if (schedule.recurrence === 'once') {
+            if (dateGroup && dateInput) {
+                dateGroup.style.display = 'block';
+                dateInput.required = true;
+                dateInput.value = schedule.schedule_date || '';
+            }
+        } else {
+            if (dateGroup && dateInput) {
+                dateGroup.style.display = 'none';
+                dateInput.required = false;
+                dateInput.value = '';
+            }
+        }
+        
         const strengthSlider = document.getElementById('strength-slider');
         const strengthValue = document.getElementById('strength-seconds');
         if (strengthSlider && strengthValue) {
@@ -174,6 +213,16 @@ class SimpleScheduleManager {
         document.getElementById('schedule-form').reset();
         document.getElementById('schedule-id').value = '';
         document.getElementById('recurrence').value = 'daily';
+        
+        // Hide date field
+        const dateGroup = document.getElementById('date-group');
+        const dateInput = document.getElementById('schedule-date');
+        if (dateGroup && dateInput) {
+            dateGroup.style.display = 'none';
+            dateInput.required = false;
+            dateInput.value = '';
+        }
+        
         const strengthSlider = document.getElementById('strength-slider');
         const strengthValue = document.getElementById('strength-seconds');
         if (strengthSlider && strengthValue) {
@@ -219,14 +268,22 @@ class SimpleScheduleManager {
 
     getFormData() {
         const strengthSlider = document.getElementById('strength-slider');
-        return {
+        const recurrence = document.getElementById('recurrence').value;
+        const data = {
             start_time: document.getElementById('start-time').value,
             end_time: document.getElementById('end-time').value,
             formula: document.getElementById('formula').value,
-            recurrence: document.getElementById('recurrence').value,
+            recurrence: recurrence,
             cycle_time: 60, // Fixed at 60 seconds
             duration: parseInt(strengthSlider ? strengthSlider.value : 10)
         };
+        
+        // Add date for one-time events
+        if (recurrence === 'once') {
+            data.schedule_date = document.getElementById('schedule-date').value;
+        }
+        
+        return data;
     }
 
     validateForm(data) {
@@ -371,7 +428,10 @@ class SimpleScheduleManager {
                 </div>
                 
                 <div class="schedule-details">
-                    <span class="schedule-recurrence">${this.getRecurrenceName(schedule.recurrence)}</span>
+                    <span class="schedule-recurrence">
+                        ${this.getRecurrenceName(schedule.recurrence)}
+                        ${schedule.recurrence === 'once' && schedule.schedule_date ? ` - ${this.formatDate(schedule.schedule_date)}` : ''}
+                    </span>
                     <span class="schedule-params">Strength: ${schedule.duration || 10}s of 60s</span>
                 </div>
                 
@@ -404,6 +464,7 @@ class SimpleScheduleManager {
 
     getRecurrenceName(recurrence) {
         const names = {
+            once: 'One Time',
             daily: 'Daily',
             weekdays: 'Weekdays',
             weekends: 'Weekends',
@@ -416,6 +477,17 @@ class SimpleScheduleManager {
             sunday: 'Sundays'
         };
         return names[recurrence] || recurrence;
+    }
+
+    formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
     }
 
     // Calendar functionality

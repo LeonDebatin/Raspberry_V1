@@ -21,6 +21,17 @@
                 <p id="scent-description-text"></p>
             </div>
         </div>
+        
+        <!-- Schedule Info Container -->
+        <div id="schedule-info" class="schedule-info hidden">
+            <div class="schedule-text">
+                <span class="schedule-label">Schedule Active:</span>
+                <a href="{{ url_for('schedule') }}" class="schedule-link" id="schedule-link">
+                    <span id="schedule-name"></span>
+                </a>
+                <span class="schedule-time" id="schedule-time"></span>
+            </div>
+        </div>
     </div>
     
     <div class="radial-container">
