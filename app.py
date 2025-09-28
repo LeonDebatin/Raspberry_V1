@@ -1103,6 +1103,18 @@ def schedule_monitor():
         wait_for_next_minute()
 
 
+# Check for active schedule at startup
+try:
+    app.logger.info("Checking for active schedules at startup...")
+    startup_refresh = refresh_current_schedule()
+    app.logger.info(f"Startup schedule check result: {startup_refresh.get('status', 'unknown')}")
+    if startup_refresh.get('status') == 'schedule_started':
+        formula = startup_refresh.get('formula', 'unknown')
+        remaining = startup_refresh.get('remaining_time', 0) / 60
+        app.logger.info(f"Started scheduled {formula} formula at startup ({remaining:.1f} min remaining)")
+except Exception as e:
+    app.logger.error(f"Error checking schedules at startup: {e}")
+
 # Start schedule monitor thread
 schedule_thread = threading.Thread(target=schedule_monitor, daemon=True)
 schedule_thread.start()
