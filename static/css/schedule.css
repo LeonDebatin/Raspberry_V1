@@ -262,6 +262,14 @@
     background: var(--green);
 }
 
+/* Paused schedule styling */
+.daily-event.paused {
+    background: #9e9e9e !important;
+    opacity: 0.7;
+    filter: grayscale(0.3);
+    border: 2px dashed #666;
+}
+
 .daily-event-time {
     font-weight: 600;
     font-size: 0.7rem;
@@ -420,6 +428,14 @@
     background: var(--green);
 }
 
+/* Paused schedule styling */
+.schedule-event.paused {
+    background: #9e9e9e !important;
+    opacity: 0.7;
+    filter: grayscale(0.3);
+    border: 2px dashed #666;
+}
+
 .schedule-event-time {
     font-weight: 600;
 }
@@ -456,6 +472,14 @@
 
 .schedule-indicator.green {
     background: var(--green);
+}
+
+/* Paused schedule indicator styling */
+.schedule-indicator.paused {
+    background: #9e9e9e !important;
+    opacity: 0.7;
+    filter: grayscale(0.3);
+    border: 1px dashed #666;
 }
 
 /* Modal Styles */

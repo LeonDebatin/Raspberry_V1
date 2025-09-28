@@ -517,6 +517,39 @@
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
+.schedule-status-container {
+    font-size: 0.85rem;
+    color: white;
+}
+
+.schedule-status-btn {
+    background: #4CAF50;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    display: inline-block;
+}
+
+.schedule-status-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.schedule-status-btn.paused {
+    background: #ff9800;
+}
+
+.schedule-status-btn.paused:hover {
+    background: #f57c00;
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
     .config-bar {

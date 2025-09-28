@@ -127,6 +127,9 @@ def activate_formula():
         if color not in ["red", "blue", "yellow", "green"]:
             return jsonify({"error": "Invalid color"}), 400
 
+        # Check if there's a currently active schedule and pause it
+        paused_schedule_info = pause_conflicting_schedule()
+        
         # Manual activation - this will override any scheduled formula
         success = gpio_controller.activate_formula(
             color,
@@ -137,15 +140,19 @@ def activate_formula():
         )
 
         if success:
-            return jsonify(
-                {
-                    "status": "success",
-                    "active_formula": color,
-                    "cycle_time": cycle_time,
-                    "duration": duration,
-                    "user_override": gpio_controller.user_override,
-                }
-            )
+            response_data = {
+                "status": "success",
+                "active_formula": color,
+                "cycle_time": cycle_time,
+                "duration": duration,
+                "user_override": gpio_controller.user_override,
+            }
+            
+            # Include paused schedule info if any
+            if paused_schedule_info:
+                response_data["paused_schedule"] = paused_schedule_info
+                
+            return jsonify(response_data)
         else:
             return jsonify({"error": "Failed to activate formula"}), 500
 
@@ -158,10 +165,22 @@ def activate_formula():
 def deactivate_all():
     """Deactivate all formulas"""
     try:
+        # Check if there's a currently active schedule and pause it
+        paused_schedule_info = pause_conflicting_schedule()
+        
         gpio_controller.deactivate_all()
-        return jsonify(
-            {"status": "success", "active_formula": None, "user_override": False}
-        )
+        
+        response_data = {
+            "status": "success", 
+            "active_formula": None, 
+            "user_override": False
+        }
+        
+        # Include paused schedule info if any
+        if paused_schedule_info:
+            response_data["paused_schedule"] = paused_schedule_info
+            
+        return jsonify(response_data)
     except Exception as e:
         app.logger.error(f"Error deactivating formulas: {e}")
         return jsonify({"error": "Internal server error"}), 500
@@ -192,6 +211,105 @@ def clear_user_override():
         )
     except Exception as e:
         app.logger.error(f"Error clearing user override: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/pause-schedule", methods=["POST"])
+def pause_schedule():
+    """Manually pause the current active schedule"""
+    try:
+        schedules_data = load_schedules()
+        current_time = datetime.now().strftime("%H:%M")
+        
+        # Find currently active schedule
+        active_schedule = find_active_schedule_for_time(schedules_data, current_time)
+        
+        if active_schedule and not active_schedule.get("paused", False):
+            # Mark the schedule as paused
+            schedules = schedules_data.get("schedules", [])
+            for schedule in schedules:
+                if schedule["id"] == active_schedule["id"]:
+                    schedule["paused"] = True
+                    schedule["paused_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    break
+            
+            save_schedules(schedules_data)
+            
+            # Deactivate current GPIO
+            gpio_controller.deactivate_all()
+            
+            return jsonify({
+                "status": "success",
+                "message": "Schedule paused",
+                "paused_schedule": {
+                    "id": active_schedule["id"],
+                    "formula": active_schedule["formula"],
+                    "start_time": active_schedule["start_time"],
+                    "end_time": active_schedule["end_time"],
+                    "recurrence": active_schedule.get("recurrence", "daily")
+                }
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "No active schedule to pause"
+            }), 400
+            
+    except Exception as e:
+        app.logger.error(f"Error pausing schedule: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/resume-schedule", methods=["POST"])
+def resume_schedule():
+    """Resume a paused schedule"""
+    try:
+        schedules_data = load_schedules()
+        current_time = datetime.now().strftime("%H:%M")
+        
+        # Find currently paused schedule that should be active now
+        paused_schedule = None
+        active_schedule = find_active_schedule_for_time(schedules_data, current_time)
+        
+        if active_schedule and active_schedule.get("paused", False):
+            paused_schedule = active_schedule
+        
+        if paused_schedule:
+            # Unpause the schedule
+            schedules = schedules_data.get("schedules", [])
+            for schedule in schedules:
+                if schedule["id"] == paused_schedule["id"]:
+                    schedule["paused"] = False
+                    if "paused_at" in schedule:
+                        del schedule["paused_at"]
+                    break
+            
+            save_schedules(schedules_data)
+            
+            # Clear user override and refresh current schedule
+            gpio_controller.clear_user_override()
+            refresh_result = refresh_current_schedule()
+            
+            return jsonify({
+                "status": "success",
+                "message": "Schedule resumed",
+                "resumed_schedule": {
+                    "id": paused_schedule["id"],
+                    "formula": paused_schedule["formula"],
+                    "start_time": paused_schedule["start_time"],
+                    "end_time": paused_schedule["end_time"],
+                    "recurrence": paused_schedule.get("recurrence", "daily")
+                },
+                "refresh_result": refresh_result
+            })
+        else:
+            return jsonify({
+                "status": "error", 
+                "message": "No paused schedule to resume"
+            }), 400
+            
+    except Exception as e:
+        app.logger.error(f"Error resuming schedule: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -253,10 +371,22 @@ def get_schedule_status():
                 if not next_schedule or start_datetime < next_schedule["datetime"]:
                     next_schedule = {"schedule": schedule, "datetime": start_datetime}
 
+        # Check if active schedule is paused
+        paused_schedule = None
+        if active_schedule and active_schedule.get("paused", False):
+            paused_schedule = {
+                "formula": active_schedule.get("formula"),
+                "start_time": active_schedule.get("start_time"),
+                "end_time": active_schedule.get("end_time"),
+                "paused_at": active_schedule.get("paused_at")
+            }
+            active_schedule = None  # Don't show as active if paused
+
         return jsonify(
             {
                 "current_time": current_time,
                 "active_schedule": active_schedule,
+                "paused_schedule": paused_schedule,
                 "next_schedule": next_schedule["schedule"] if next_schedule else None,
                 "next_schedule_time": (
                     next_schedule["datetime"].strftime("%H:%M")
@@ -901,6 +1031,45 @@ def find_active_schedule_for_time(schedules_data, current_time):
     return None
 
 
+def pause_conflicting_schedule():
+    """Pause any currently active schedule when user manually overrides"""
+    try:
+        schedules_data = load_schedules()
+        current_time = datetime.now().strftime("%H:%M")
+        
+        # Find what schedule should be active right now
+        active_schedule = find_active_schedule_for_time(schedules_data, current_time)
+        
+        if active_schedule:
+            # Get current GPIO status to confirm it's a scheduled activation
+            gpio_status = gpio_controller.get_status()
+            
+            if gpio_status.get("active") and gpio_status.get("is_scheduled"):
+                # Find the schedule in the data and pause it
+                for schedule in schedules_data["schedules"]:
+                    if schedule.get("id") == active_schedule.get("id"):
+                        schedule["paused"] = True
+                        schedule["paused_at"] = datetime.now().isoformat()
+                        
+                        # Save the updated schedules
+                        if save_schedules(schedules_data):
+                            app.logger.info(f"Paused schedule: {schedule.get('formula')} ({schedule.get('start_time')}-{schedule.get('end_time')})")
+                            return {
+                                "id": schedule.get("id"),
+                                "formula": schedule.get("formula"),
+                                "start_time": schedule.get("start_time"),
+                                "end_time": schedule.get("end_time"),
+                                "recurrence": schedule.get("recurrence", "daily")
+                            }
+                        break
+        
+        return None
+        
+    except Exception as e:
+        app.logger.error(f"Error pausing conflicting schedule: {e}")
+        return None
+
+
 def refresh_current_schedule():
     """Check current time and update active schedule if needed after schedule changes"""
     try:
@@ -917,6 +1086,35 @@ def refresh_current_schedule():
 
         
         if target_schedule:
+            # Check if this schedule is currently paused
+            if target_schedule.get("paused", False):
+                # Auto-resume logic: clear pause flag if this is a new occurrence
+                paused_at = target_schedule.get("paused_at")
+                if paused_at:
+                    paused_datetime = datetime.fromisoformat(paused_at)
+                    current_datetime = datetime.now()
+                    
+                    # If more than 2 hours have passed or it's a different day, auto-resume
+                    if ((current_datetime - paused_datetime).total_seconds() > 7200 or 
+                        paused_datetime.date() != current_datetime.date()):
+                        
+                        # Clear pause flag and update schedule
+                        schedules_data = load_schedules()
+                        for schedule in schedules_data["schedules"]:
+                            if schedule.get("id") == target_schedule.get("id"):
+                                schedule.pop("paused", None)
+                                schedule.pop("paused_at", None)
+                                save_schedules(schedules_data)
+                                app.logger.info(f"Auto-resumed schedule: {schedule.get('formula')} ({schedule.get('start_time')}-{schedule.get('end_time')})")
+                                target_schedule = schedule  # Use updated schedule
+                                break
+                    else:
+                        # Schedule is still paused, don't start it
+                        return {
+                            "status": "schedule_paused",
+                            "message": f"Schedule {target_schedule.get('formula')} is currently paused by user"
+                        }
+            
             # A schedule should be active
             target_formula = target_schedule.get("formula")
             target_cycle_time = target_schedule.get("cycle_time", 60)

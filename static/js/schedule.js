@@ -501,6 +501,10 @@ class SimpleScheduleManager {
                 }
                 break;
 
+            case 'schedule_paused':
+                window.notifications.info('⏸️ Schedule Paused: Schedule was overridden by manual action');
+                break;
+
             case 'error':
                 window.notifications.error(`❌ Schedule Error: ${refreshResult.message}`);
                 break;
@@ -894,6 +898,12 @@ class SimpleScheduleManager {
             const schedule = hourSchedules[0];
             const indicator = document.createElement('div');
             indicator.className = `schedule-indicator ${schedule.formula}`;
+            
+            // Add paused class if schedule is paused
+            if (schedule.paused) {
+                indicator.classList.add('paused');
+            }
+            
             indicator.dataset.id = schedule.id;
             indicator.style.cursor = 'pointer';
             
@@ -936,9 +946,15 @@ class SimpleScheduleManager {
     createScheduleEvent(schedule, compact = false) {
         const event = document.createElement('div');
         event.className = `schedule-event ${schedule.formula}`;
+        
+        // Add paused class if schedule is paused
+        if (schedule.paused) {
+            event.classList.add('paused');
+        }
+        
         event.dataset.id = schedule.id;
         event.style.cursor = 'pointer';
-        event.title = 'Click to edit schedule';
+        event.title = schedule.paused ? 'Click to edit paused schedule' : 'Click to edit schedule';
         
         const startTime = schedule.start_time || schedule.time || '';
         const endTime = schedule.end_time || '';

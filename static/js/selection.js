@@ -50,6 +50,7 @@ class SelectionController {
         this.scheduleInfo = document.getElementById('schedule-info');
         this.scheduleDetails = document.getElementById('schedule-details');
         this.scheduleEditLink = document.getElementById('schedule-edit-link');
+        this.scheduleStatus = document.getElementById('schedule-status');
         console.log('Found scheduleEditLink:', this.scheduleEditLink);
         
         // Progress circle elements
@@ -125,6 +126,13 @@ class SelectionController {
                 }
             });
         }
+        
+        // Schedule status button click handler
+        if (this.scheduleStatus) {
+            this.scheduleStatus.addEventListener('click', () => {
+                this.toggleScheduleStatus();
+            });
+        }
     }
     
     async selectFormula(color) {
@@ -149,8 +157,19 @@ class SelectionController {
             // Show scent description
             this.showScentDescription(color);
             
-            // Hide schedule info for manual activations
-            this.hideScheduleInfo();
+            // Check if a schedule was paused
+            if (response.paused_schedule) {
+                const pausedFormula = getFormulaDisplayName(response.paused_schedule.formula);
+                const timeRange = `${response.paused_schedule.start_time}-${response.paused_schedule.end_time}`;
+                window.notifications.info(
+                    `⏸️ Paused scheduled ${pausedFormula} (${timeRange}) - Manual override active`
+                );
+            }
+            
+            // Show schedule info after backend processing (with a small delay to ensure pause is processed)
+            setTimeout(() => {
+                this.showScheduleInfo();
+            }, 100);
             
             window.notifications.success(
                 `${getFormulaDisplayName(color)} formula activated (${this.diffusionDuration}s of ${this.cycleTime}s)`
@@ -173,7 +192,7 @@ class SelectionController {
         try {
             this.updateStatus('Deactivating...', false);
             
-            await window.api.post('/api/deactivate', {});
+            const response = await window.api.post('/api/deactivate', {});
             
             this.selectedFormula = null;
             this.isActive = false;
@@ -187,8 +206,19 @@ class SelectionController {
             // Hide scent description
             this.hideScentDescription();
             
-            // Hide schedule information
-            this.hideScheduleInfo();
+            // Check if a schedule was paused
+            if (response.paused_schedule) {
+                const pausedFormula = getFormulaDisplayName(response.paused_schedule.formula);
+                const timeRange = `${response.paused_schedule.start_time}-${response.paused_schedule.end_time}`;
+                window.notifications.info(
+                    `⏸️ Paused scheduled ${pausedFormula} (${timeRange}) - Manual stop requested`
+                );
+            }
+            
+            // Show schedule info after backend processing (with a small delay to ensure pause is processed)
+            setTimeout(() => {
+                this.showScheduleInfo();
+            }, 100);
             
             window.notifications.success('All formulas deactivated');
             
@@ -280,9 +310,11 @@ class SelectionController {
                 // Stop progress circle
                 this.stopProgressCircle();
                 
-                // Hide scent description and schedule info
+                // Hide scent description
                 this.hideScentDescription();
-                this.hideScheduleInfo();
+                
+                // Still check for schedule info even when no formula is active (might be paused schedule)
+                this.showScheduleInfo();
             }
             
         } catch (error) {
@@ -577,8 +609,8 @@ class SelectionController {
             // Show scent description (same as manual activation)
             this.showScentDescription(status.active_formula);
             
-            // Check and show schedule information if active
-            this.showScheduleInfo(status.active_formula);
+            // Check and show schedule information (regardless of active formula)
+            this.showScheduleInfo();
         } else {
             console.log('⚠️ Backend cycle timing not available, using fallback method');
             // Fallback to old method if backend doesn't provide cycle timing
@@ -680,37 +712,68 @@ class SelectionController {
     }
     
     // Schedule Information Methods
-    async showScheduleInfo(activeFormula) {
+    async showScheduleInfo(activeFormula = null) {
         if (!this.scheduleInfo || !this.scheduleDetails || !this.scheduleEditLink) return;
         
         try {
             // Get current schedule information
             const scheduleResponse = await window.api.get('/api/schedule-status');
             
-            if (scheduleResponse.active_schedule && scheduleResponse.active_schedule.formula === activeFormula) {
-                // Format schedule details  
+            // Check for any active schedule (regardless of current selection)
+            if (scheduleResponse.active_schedule) {
                 const activeSchedule = scheduleResponse.active_schedule;
-                const scent = this.getFormulaDisplayName(activeFormula);
+                const scheduledFormula = activeSchedule.formula;
+                const scent = this.getFormulaDisplayName(scheduledFormula);
                 const recurrence = this.getRecurrenceDisplayName(activeSchedule.recurrence || 'daily');
                 const startTime = activeSchedule.start_time || 'Unknown';
                 const endTime = activeSchedule.end_time || 'Unknown';
                 
                 // Update schedule details text
                 this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
+                this.scheduleDetails.style.color = ''; // Reset color
+                
+                // Update status button
+                this.scheduleStatus.textContent = 'ACTIVE';
+                this.scheduleStatus.className = 'schedule-status-btn';
+                this.scheduleStatus.title = 'Click to pause schedule';
                 
                 // Update edit link to go to schedule page with the active schedule ID
                 const scheduleId = activeSchedule.id;
                 this.scheduleEditLink.href = `/schedule/${scheduleId}`;
-                console.log('Set scheduleEditLink href to:', this.scheduleEditLink.href);
-                console.log('Link element:', this.scheduleEditLink);
                 
                 // Show the container
                 this.scheduleInfo.classList.remove('hidden');
                 
                 return true; // Schedule info was shown
+            }
+            // Check for any paused schedule (regardless of current selection)
+            else if (scheduleResponse.paused_schedule) {
+                const pausedSchedule = scheduleResponse.paused_schedule;
+                const scheduledFormula = pausedSchedule.formula;
+                const scent = this.getFormulaDisplayName(scheduledFormula);
+                const recurrence = this.getRecurrenceDisplayName(pausedSchedule.recurrence || 'daily');
+                const startTime = pausedSchedule.start_time || 'Unknown';
+                const endTime = pausedSchedule.end_time || 'Unknown';
+                
+                // Update schedule details text (remove PAUSED from text since it's in status)
+                this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
+                this.scheduleDetails.style.color = '#ff9800'; // Orange color for paused
+                
+                // Update status button
+                this.scheduleStatus.textContent = 'PAUSED';
+                this.scheduleStatus.className = 'schedule-status-btn paused';
+                this.scheduleStatus.title = 'Click to resume schedule';
+                
+                // Update edit link (we might not have the ID for paused, so link to main schedule page)
+                this.scheduleEditLink.href = `/schedule`;
+                
+                // Show the container
+                this.scheduleInfo.classList.remove('hidden');
+                
+                return true; // Paused schedule info was shown
             } else {
                 this.hideScheduleInfo();
-                return false; // No active schedule for this formula
+                return false; // No active or paused schedule
             }
         } catch (error) {
             console.error('Error loading schedule info:', error);
@@ -724,6 +787,52 @@ class SelectionController {
         
         // Hide the container
         this.scheduleInfo.classList.add('hidden');
+    }
+    
+    async toggleScheduleStatus() {
+        if (!this.scheduleStatus) return;
+        
+        try {
+            const isCurrentlyPaused = this.scheduleStatus.textContent === 'PAUSED';
+            
+            if (isCurrentlyPaused) {
+                // Resume the paused schedule
+                const response = await window.api.post('/api/resume-schedule', {});
+                
+                if (response.resumed_schedule) {
+                    const resumedFormula = this.getFormulaDisplayName(response.resumed_schedule.formula);
+                    const timeRange = `${response.resumed_schedule.start_time}-${response.resumed_schedule.end_time}`;
+                    window.notifications.success(
+                        `▶️ Resumed scheduled ${resumedFormula} (${timeRange})`
+                    );
+                    
+                    // Refresh the schedule info to show active status
+                    setTimeout(() => {
+                        this.showScheduleInfo();
+                    }, 100);
+                }
+            } else {
+                // Pause the active schedule
+                const response = await window.api.post('/api/pause-schedule', {});
+                
+                if (response.paused_schedule) {
+                    const pausedFormula = this.getFormulaDisplayName(response.paused_schedule.formula);
+                    const timeRange = `${response.paused_schedule.start_time}-${response.paused_schedule.end_time}`;
+                    window.notifications.info(
+                        `⏸️ Paused scheduled ${pausedFormula} (${timeRange})`
+                    );
+                    
+                    // Refresh the schedule info to show paused status
+                    setTimeout(() => {
+                        this.showScheduleInfo();
+                    }, 100);
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error toggling schedule status:', error);
+            window.notifications.error('Error changing schedule status');
+        }
     }
     
     getFormulaDisplayName(color) {
