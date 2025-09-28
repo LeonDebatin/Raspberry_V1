@@ -358,6 +358,11 @@ class SimpleScheduleManager {
 
         if (!response.ok) {
             const error = await response.json();
+            if (response.status === 409) {
+                // Handle overlap conflict
+                this.showOverlapWarning(error);
+                throw new Error('Schedule overlap detected');
+            }
             throw new Error(error.error || 'Failed to create schedule');
         }
 
@@ -386,6 +391,11 @@ class SimpleScheduleManager {
 
         if (!response.ok) {
             const error = await response.json();
+            if (response.status === 409) {
+                // Handle overlap conflict
+                this.showOverlapWarning(error);
+                throw new Error('Schedule overlap detected');
+            }
             throw new Error(error.error || 'Failed to update schedule');
         }
 
@@ -998,6 +1008,35 @@ class SimpleScheduleManager {
     isToday(date) {
         const today = new Date();
         return date.toDateString() === today.toDateString();
+    }
+
+    showOverlapWarning(errorData) {
+        console.log('Schedule overlap detected:', errorData);
+        
+        // Create detailed warning message
+        let warningTitle = '⚠️ Schedule Overlap Detected!';
+        let warningDetails = '';
+        
+        if (errorData.overlapping_schedules && errorData.overlapping_schedules.length > 0) {
+            warningDetails = 'This schedule conflicts with:\n';
+            errorData.overlapping_schedules.forEach((schedule, index) => {
+                const formulaName = this.getFormulaName(schedule.formula);
+                warningDetails += `• ${formulaName} (${schedule.time_range}) - ${schedule.recurrence}\n`;
+            });
+            warningDetails += '\nPlease choose a different time or disable conflicting schedules.';
+        }
+        
+        // Show notification
+        window.notifications.warning(`${warningTitle}\n\n${warningDetails}`);
+        
+        // Show detailed alert
+        const fullMessage = `${warningTitle}\n\n${errorData.message}\n\nConflicting schedules:\n${errorData.overlapping_schedules.map((s, i) => 
+            `${i + 1}. ${this.getFormulaName(s.formula)} (${s.time_range}) - ${s.recurrence}`
+        ).join('\n')}\n\nPlease choose a different time slot or disable the conflicting schedules.`;
+        
+        setTimeout(() => {
+            alert(fullMessage);
+        }, 100);
     }
 }
 

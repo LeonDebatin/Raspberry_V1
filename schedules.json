@@ -16,7 +16,7 @@
       "id": 2,
       "start_time": "17:10",
       "end_time": "18:00",
-      "formula": "green",
+      "formula": "yellow",
       "cycle_time": 60,
       "duration": 10,
       "recurrence": "weekends",
