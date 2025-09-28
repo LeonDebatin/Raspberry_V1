@@ -2,12 +2,24 @@
   "schedules": [
     {
       "id": 1,
-      "start_time": "16:10",
-      "end_time": "17:00",
-      "formula": "yellow",
+      "start_time": "17:00",
+      "end_time": "18:00",
+      "formula": "red",
       "cycle_time": 60,
       "duration": 10,
-      "recurrence": "daily",
+      "recurrence": "once",
+      "enabled": false,
+      "schedule_date": "2025-09-28",
+      "executed": true
+    },
+    {
+      "id": 2,
+      "start_time": "17:10",
+      "end_time": "18:00",
+      "formula": "red",
+      "cycle_time": 60,
+      "duration": 10,
+      "recurrence": "weekends",
       "enabled": true
     }
   ]

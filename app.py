@@ -343,7 +343,11 @@ def create_schedule():
         schedules_data["schedules"].append(new_schedule)
 
         if save_schedules(schedules_data):
-            return jsonify(new_schedule)
+            # Check if this new schedule should be active right now
+            refresh_result = refresh_current_schedule()
+            response = new_schedule.copy()
+            response["refresh_result"] = refresh_result
+            return jsonify(response)
         else:
             return jsonify({"error": "Failed to save schedule"}), 500
 
@@ -422,7 +426,11 @@ def update_schedule(schedule_id):
         target_schedule.update(updated_schedule)
 
         if save_schedules(schedules_data):
-            return jsonify(target_schedule)
+            # Check if the current schedule needs to be updated
+            refresh_result = refresh_current_schedule()
+            response = target_schedule.copy()
+            response["refresh_result"] = refresh_result
+            return jsonify(response)
         else:
             return jsonify({"error": "Failed to save schedule"}), 500
 
@@ -503,7 +511,9 @@ def delete_schedule(schedule_id):
         ]
 
         if save_schedules(schedules_data):
-            return jsonify({"status": "success"})
+            # Check if the currently running schedule was deleted and needs to be stopped
+            refresh_result = refresh_current_schedule()
+            return jsonify({"status": "success", "refresh_result": refresh_result})
         else:
             return jsonify({"error": "Failed to save schedules"}), 500
 
@@ -889,6 +899,115 @@ def find_active_schedule_for_time(schedules_data, current_time):
             ):
                 return schedule
     return None
+
+
+def refresh_current_schedule():
+    """Check current time and update active schedule if needed after schedule changes"""
+    try:
+        schedules_data = load_schedules()
+        current_time = datetime.now().strftime("%H:%M")
+        current_datetime = datetime.now()
+        
+        # Find what schedule should be active right now
+        target_schedule = find_active_schedule_for_time(schedules_data, current_time)
+        
+        # Get current GPIO status
+        gpio_status = gpio_controller.get_status()
+        
+        # Log for debugging
+        app.logger.info(f"Schedule refresh check at {current_time}")
+        app.logger.info(f"Target schedule: {target_schedule.get('formula') if target_schedule else 'None'}")
+        app.logger.info(f"Current GPIO active: {gpio_status.get('active')} ({gpio_status.get('active_formula')})")
+        
+        if target_schedule:
+            # A schedule should be active
+            target_formula = target_schedule.get("formula")
+            target_cycle_time = target_schedule.get("cycle_time", 60)
+            target_duration = target_schedule.get("duration", 10)
+            
+            # Check if we need to start or change the active formula
+            needs_change = (
+                not gpio_status.get("active") or 
+                gpio_status.get("active_formula") != target_formula or 
+                gpio_status.get("cycle_time") != target_cycle_time or 
+                gpio_status.get("duration") != target_duration or
+                not gpio_status.get("is_scheduled")
+            )
+            
+            if needs_change:
+                # Calculate remaining time for this schedule
+                end_time = datetime.strptime(target_schedule["end_time"], "%H:%M").time()
+                end_datetime = datetime.combine(current_datetime.date(), end_time)
+                
+                # Handle case where end time is next day (crosses midnight)
+                if end_datetime <= current_datetime:
+                    end_datetime += timedelta(days=1)
+                
+                remaining_seconds = (end_datetime - current_datetime).total_seconds()
+                
+                # Don't start if less than 30 seconds remaining
+                if remaining_seconds < 30:
+                    app.logger.info(f"Schedule {target_formula} has less than 30s remaining, not starting")
+                    return {
+                        "status": "schedule_expired", 
+                        "message": "Schedule time has already passed or expires too soon"
+                    }
+                
+                remaining_minutes = remaining_seconds / 60
+                
+                # Start the scheduled formula
+                success = gpio_controller.activate_formula(
+                    target_formula,
+                    target_cycle_time,
+                    target_duration,
+                    is_scheduled=True,
+                    activation_duration=remaining_minutes
+                )
+                
+                if success:
+                    app.logger.info(f"Started scheduled formula: {target_formula} ({target_schedule['start_time']}-{target_schedule['end_time']}) for {remaining_minutes:.1f} minutes")
+                    return {
+                        "status": "schedule_started",
+                        "active_schedule": target_schedule,
+                        "remaining_time": remaining_seconds,
+                        "formula": target_formula,
+                        "message": f"Started scheduled {target_formula} formula"
+                    }
+                else:
+                    app.logger.error(f"Failed to start scheduled formula: {target_formula}")
+                    return {
+                        "status": "error",
+                        "message": "Failed to start scheduled formula"
+                    }
+            else:
+                # Schedule is already running correctly
+                return {
+                    "status": "no_change_needed",
+                    "active_schedule": target_schedule,
+                    "formula": target_formula,
+                    "message": "Schedule is already running correctly"
+                }
+        else:
+            # No schedule should be active - stop any scheduled activity
+            if gpio_status.get("active") and gpio_status.get("is_scheduled"):
+                gpio_controller.stop_all()
+                app.logger.info("Stopped scheduled activities - no schedule should be active")
+                return {
+                    "status": "stopped_activities",
+                    "message": "Stopped scheduled activities - no schedule should be active"
+                }
+            else:
+                return {
+                    "status": "no_change_needed",
+                    "message": "No schedule should be active and none is running"
+                }
+                
+    except Exception as e:
+        app.logger.error(f"Error refreshing current schedule: {e}")
+        return {
+            "status": "error",
+            "message": f"Error refreshing schedule: {str(e)}"
+        }
 
 
 def schedule_monitor():

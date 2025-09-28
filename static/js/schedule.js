@@ -6,6 +6,7 @@ class SimpleScheduleManager {
         this.editingId = null;
         this.currentView = 'daily';
         this.currentDate = new Date();
+        this.editParameterProcessed = false;
 
         // Wait for DOM
         if (document.readyState === 'loading') {
@@ -42,8 +43,8 @@ class SimpleScheduleManager {
         const cancelBtn = document.getElementById('cancel-btn');
         const deleteBtn = document.getElementById('delete-btn');
 
-        if (modalClose) modalClose.addEventListener('click', () => this.hideModal());
-        if (cancelBtn) cancelBtn.addEventListener('click', () => this.hideModal());
+        if (modalClose) modalClose.addEventListener('click', () => this.handleCancel());
+        if (cancelBtn) cancelBtn.addEventListener('click', () => this.handleCancel());
         if (deleteBtn) deleteBtn.addEventListener('click', () => this.handleDelete());
 
         // Form submission
@@ -237,13 +238,49 @@ class SimpleScheduleManager {
 
     hideModal() {
         document.getElementById('schedule-modal').classList.add('hidden');
+        this.resetForm();
         this.editingId = null;
+        // Clear any edit parameter to prevent auto-reopening
+        window.editScheduleId = null;
     }
 
-    handleDelete() {
+    handleCancel() {
+        this.hideModal();
+        
+        // Navigate back to main schedule page if we're in edit mode
+        if (window.location.pathname !== '/schedule') {
+            window.location.href = '/schedule';
+        }
+    }
+
+    async handleDelete() {
         if (this.editingId) {
-            this.deleteSchedule(this.editingId);
-            this.hideModal();
+            try {
+                console.log('HandleDelete - Starting delete operation for ID:', this.editingId);
+                
+                // Set flag to prevent duplicate navigation in deleteSchedule
+                this._deleteFromModal = true;
+                await this.deleteSchedule(this.editingId);
+                this._deleteFromModal = false;
+                
+                console.log('✅ Delete operation completed successfully');
+                
+                // Simulate cancel button click to handle navigation properly
+                this.handleCancel();
+                
+                // Add a small delay to ensure navigation completes, then refresh if on same page
+                setTimeout(() => {
+                    if (window.location.pathname === '/schedule') {
+                        console.log('🔄 Refreshing page to show changes after delete');
+                        window.location.reload();
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.error('❌ Error deleting schedule:', error);
+                window.notifications.error('Failed to delete schedule: ' + error.message);
+                // Don't navigate on error - keep the modal open
+            }
         }
     }
 
@@ -255,18 +292,35 @@ class SimpleScheduleManager {
         }
 
         try {
+            console.log('HandleSubmit - Starting operation:', {
+                editingId: this.editingId,
+                currentPath: window.location.pathname
+            });
+            
+            // Perform the schedule operation
             if (this.editingId) {
                 await this.updateSchedule(this.editingId, formData);
             } else {
                 await this.createSchedule(formData);
             }
 
-            this.hideModal();
-            this.loadSchedules();
+            console.log('✅ Operation completed successfully');
+            
+            // Simulate cancel button click to handle navigation properly
+            this.handleCancel();
+            
+            // Add a small delay to ensure navigation completes, then refresh if on same page
+            setTimeout(() => {
+                if (window.location.pathname === '/schedule') {
+                    console.log('🔄 Refreshing page to show changes');
+                    window.location.reload();
+                }
+            }, 100);
 
         } catch (error) {
-            console.error('Error saving schedule:', error);
+            console.error('❌ Error saving schedule:', error);
             window.notifications.error('Failed to save schedule: ' + error.message);
+            // Don't navigate on error - keep the modal open for correction
         }
     }
 
@@ -320,12 +374,18 @@ class SimpleScheduleManager {
             throw new Error(error.error || 'Failed to create schedule');
         }
 
-        const newSchedule = await response.json();
-        console.log('Schedule created:', newSchedule);
+        const result = await response.json();
+        console.log('Schedule created:', result);
 
+        // Show success message for creation
         window.notifications.success(
             `Schedule created: ${this.getFormulaName(data.formula)} from ${this.formatTime(data.start_time)} to ${this.formatTime(data.end_time)}`
         );
+
+        // Show schedule refresh information
+        this.handleScheduleRefresh(result.refresh_result);
+        
+        return result;
     }
 
     async updateSchedule(id, data) {
@@ -342,12 +402,17 @@ class SimpleScheduleManager {
             throw new Error(error.error || 'Failed to update schedule');
         }
 
-        const updatedSchedule = await response.json();
-        console.log('Schedule updated:', updatedSchedule);
+        const result = await response.json();
+        console.log('Schedule updated:', result);
 
         window.notifications.success(
             `Schedule updated: ${this.getFormulaName(data.formula)} from ${this.formatTime(data.start_time)} to ${this.formatTime(data.end_time)}`
         );
+
+        // Show schedule refresh information
+        this.handleScheduleRefresh(result.refresh_result);
+        
+        return result;
     }
 
     async deleteSchedule(id) {
@@ -370,8 +435,20 @@ class SimpleScheduleManager {
                 throw new Error(error.error || 'Failed to delete schedule');
             }
 
-            this.loadSchedules();
+            const result = await response.json();
+            console.log('Schedule deleted:', result);
+
             window.notifications.success('Schedule deleted');
+
+            // Show schedule refresh information
+            this.handleScheduleRefresh(result.refresh_result);
+
+            // Only handle refresh if not called from handleDelete (which handles its own navigation/refresh)
+            if (!this._deleteFromModal) {
+                console.log('🔄 Refreshing UI after delete from schedule list');
+                await this.refreshUIAfterOperation();
+                console.log('✅ Delete completed, UI refreshed');
+            }
 
         } catch (error) {
             console.error('Error deleting schedule:', error);
@@ -394,22 +471,78 @@ class SimpleScheduleManager {
         }
     }
 
+    async refreshUIAfterOperation() {
+        console.log('🔄 Refreshing UI after operation');
+        try {
+            // Reload schedules data and re-render UI
+            await this.loadSchedules();
+            this.renderCalendarView();
+            
+            console.log('✅ UI refresh completed');
+        } catch (error) {
+            console.error('❌ Error refreshing UI:', error);
+            window.notifications.error('Failed to refresh display');
+        }
+    }
+
+    handleScheduleRefresh(refreshResult) {
+        if (!refreshResult) return;
+
+        console.log('Schedule refresh result:', refreshResult);
+
+        switch (refreshResult.status) {
+            case 'schedule_started':
+                const formulaName = this.getFormulaName(refreshResult.formula || refreshResult.active_schedule?.formula);
+                const remainingMinutes = Math.round(refreshResult.remaining_time / 60);
+                window.notifications.success(
+                    `� Schedule Active: ${formulaName} is now running (${remainingMinutes} min remaining)`
+                );
+                break;
+
+            case 'stopped_activities':
+                window.notifications.info('� Schedule Stopped: No schedule should be active right now');
+                break;
+
+            case 'schedule_expired':
+                window.notifications.warning('⚠️ Schedule Expired: The schedule time has already passed or expires too soon');
+                break;
+
+            case 'no_change_needed':
+                if (refreshResult.active_schedule) {
+                    const formulaName = this.getFormulaName(refreshResult.formula || refreshResult.active_schedule.formula);
+                    console.log(`✅ Schedule refresh: ${formulaName} is already running correctly`);
+                    // Don't show notification for no change - it's not user-actionable
+                } else {
+                    console.log('✅ Schedule refresh: No active schedule - correct state');
+                }
+                break;
+
+            case 'error':
+                window.notifications.error(`❌ Schedule Error: ${refreshResult.message}`);
+                break;
+
+            default:
+                console.log('Unknown schedule refresh status:', refreshResult.status);
+        }
+    }
+
     checkForEditParameter() {
         // Check if template provided an edit schedule ID
         const editId = window.editScheduleId;
         
-        if (editId) {
-            console.log(`Auto-editing schedule with ID: ${editId}, available schedules:`, this.schedules.map(s => s.id));
+        if (editId && !this.editParameterProcessed) {
+            console.log(`🎯 Auto-editing schedule with ID: ${editId}`);
             
             // Find the schedule with the specified ID
             const schedule = this.schedules.find(s => s.id === editId);
             
             if (schedule) {
-                console.log(`Found schedule:`, schedule);
+                console.log(`✅ Found schedule for auto-edit:`, schedule);
                 // Auto-edit this schedule
                 this.editSchedule(schedule.id);
+                this.editParameterProcessed = true; // Prevent re-processing
             } else {
-                console.warn(`Schedule with ID ${editId} not found in:`, this.schedules);
+                console.warn(`❌ Schedule with ID ${editId} not found`);
                 window.notifications.error(`Schedule not found`);
             }
         }
