@@ -166,7 +166,7 @@ class SelectionController {
             this.showScentDescription(color);
             
             // Hide schedule info immediately when user manually overrides
-            this.hideScheduleInfo();
+            this.hideScheduleInfoAndWarn();
             
             // Check if a schedule was paused
             if (response.paused_schedule) {
@@ -213,7 +213,7 @@ class SelectionController {
             this.hideScentDescription();
             
             // Hide schedule info immediately when user manually stops
-            this.hideScheduleInfo();
+            this.hideScheduleInfoAndWarn();
             
             // Check if a schedule was paused
             if (response.paused_schedule) {
@@ -243,6 +243,9 @@ class SelectionController {
         this.diffusionDuration = duration;
         this.updateSliderDisplay();
         
+        // Hide schedule info and show warning if schedule was active
+        this.hideScheduleInfoAndWarn();
+        
         // If currently active, restart the cycle with new settings (ball jumps to start)
         if (this.isActive && this.selectedFormula) {
             // Update the progress circle immediately with new timing
@@ -263,6 +266,57 @@ class SelectionController {
             const percentage = ((this.diffusionDuration - 5) / (60 - 5)) * 100;
             this.diffusionSlider.style.setProperty('--sx', `${percentage}%`);
         }
+    }
+    
+    hideScheduleInfoAndWarn() {
+        const scheduleInfo = document.getElementById('schedule-info');
+        
+        if (scheduleInfo && scheduleInfo.style.display !== 'none') {
+            // Hide the schedule info immediately
+            scheduleInfo.style.display = 'none';
+            
+            // Show warning message for 3 seconds
+            this.showWarningMessage('Schedule paused - Visit the <a href="#" onclick="showTab(\'schedule\')">Schedule tab</a> to reactivate');
+        }
+    }
+    
+    showWarningMessage(message) {
+        // Create or get existing warning element
+        let warningElement = document.getElementById('schedule-warning');
+        
+        if (!warningElement) {
+            warningElement = document.createElement('div');
+            warningElement.id = 'schedule-warning';
+            warningElement.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: -350px;
+                background: #ff6b6b;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000;
+                font-size: 14px;
+                max-width: 300px;
+                text-align: center;
+                transition: right 0.3s ease;
+            `;
+            document.body.appendChild(warningElement);
+        }
+        
+        // Set message and show
+        warningElement.innerHTML = message;
+        
+        // Animate in
+        setTimeout(() => {
+            warningElement.style.right = '20px';
+        }, 10);
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+            warningElement.style.right = '-350px';
+        }, 3000);
     }
     
 
@@ -1020,11 +1074,15 @@ class SelectionController {
     startDemoMode() {
         if (this.isInDemoMode) return;
         
+        // Hide schedule info and show warning if schedule was active
+        this.hideScheduleInfoAndWarn();
+        
         this.isInDemoMode = true;
         this.demoCurrentStep = 0;
         
         // Set diffusion duration to 5 seconds for demo
-        this.setDiffusionDuration(5);
+        this.diffusionDuration = 5; // Set directly to avoid double warning
+        this.updateSliderDisplay();
         if (this.diffusionSlider) {
             this.diffusionSlider.value = 5;
         }
