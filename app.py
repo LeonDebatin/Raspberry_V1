@@ -554,6 +554,11 @@ def update_schedule(schedule_id):
 
         # Update the schedule
         target_schedule.update(updated_schedule)
+        
+        # Clear paused status when schedule is updated - editing should unpause the schedule
+        if target_schedule.get("paused"):
+            target_schedule.pop("paused", None)
+            target_schedule.pop("paused_at", None)
 
         if save_schedules(schedules_data):
             # Check if the current schedule needs to be updated
@@ -710,6 +715,10 @@ def quiz_result():
 
 def should_activate_schedule(schedule):
     """Check if schedule should activate based on recurrence pattern"""
+    # Don't activate paused schedules
+    if schedule.get("paused", False):
+        return False
+        
     now = datetime.now()
     current_day = now.strftime("%A").lower()
 
@@ -1040,11 +1049,13 @@ def pause_conflicting_schedule():
         # Find what schedule should be active right now
         active_schedule = find_active_schedule_for_time(schedules_data, current_time)
         
-        if active_schedule:
-            # Get current GPIO status to confirm it's a scheduled activation
+        if active_schedule and not active_schedule.get("paused", False):
+            # Get current GPIO status
             gpio_status = gpio_controller.get_status()
             
-            if gpio_status.get("active") and gpio_status.get("is_scheduled"):
+            # If there's something active, pause the conflicting schedule
+            # This includes both scheduled and previously resumed schedules
+            if gpio_status.get("active"):
                 # Find the schedule in the data and pause it
                 for schedule in schedules_data["schedules"]:
                     if schedule.get("id") == active_schedule.get("id"):

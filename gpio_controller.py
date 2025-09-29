@@ -248,8 +248,10 @@ class SimpleGPIOController:
     def get_status(self):
         """Get current activation status"""
         return {
+            'active': bool(self.active_formula),  # Add active flag
             'active_formula': self.active_formula,
             'active_schedule': self.active_schedule,
+            'is_scheduled': bool(self.active_schedule and not self.user_override),  # Add is_scheduled flag
             'user_override': self.user_override,
             'schedule_end_time': self.schedule_end_time,
             'pin_mapping': self.pin_mapping,

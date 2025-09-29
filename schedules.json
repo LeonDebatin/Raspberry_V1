@@ -13,30 +13,10 @@
       "executed": true
     },
     {
-      "id": 3,
-      "start_time": "19:00",
-      "end_time": "20:00",
-      "formula": "red",
-      "cycle_time": 60,
-      "duration": 10,
-      "recurrence": "daily",
-      "enabled": true
-    },
-    {
-      "id": 4,
-      "start_time": "20:00",
-      "end_time": "21:00",
-      "formula": "red",
-      "cycle_time": 60,
-      "duration": 10,
-      "recurrence": "daily",
-      "enabled": true
-    },
-    {
       "id": 5,
       "start_time": "17:00",
       "end_time": "18:00",
-      "formula": "red",
+      "formula": "yellow",
       "cycle_time": 60,
       "duration": 10,
       "recurrence": "daily",
@@ -70,6 +50,26 @@
       "start_time": "22:00",
       "end_time": "23:00",
       "formula": "yellow",
+      "cycle_time": 60,
+      "duration": 10,
+      "recurrence": "daily",
+      "enabled": true
+    },
+    {
+      "id": 9,
+      "start_time": "19:00",
+      "end_time": "20:00",
+      "formula": "blue",
+      "cycle_time": 60,
+      "duration": 10,
+      "recurrence": "daily",
+      "enabled": true
+    },
+    {
+      "id": 10,
+      "start_time": "18:00",
+      "end_time": "19:00",
+      "formula": "red",
       "cycle_time": 60,
       "duration": 10,
       "recurrence": "daily",

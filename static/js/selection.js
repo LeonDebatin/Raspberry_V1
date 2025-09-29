@@ -51,6 +51,7 @@ class SelectionController {
         this.scheduleDetails = document.getElementById('schedule-details');
         this.scheduleEditLink = document.getElementById('schedule-edit-link');
         this.scheduleStatus = document.getElementById('schedule-status');
+        this.scheduleActivateBtn = document.getElementById('schedule-activate-btn');
         console.log('Found scheduleEditLink:', this.scheduleEditLink);
         
         // Progress circle elements
@@ -133,6 +134,13 @@ class SelectionController {
                 this.toggleScheduleStatus();
             });
         }
+        
+        // Schedule activate button click handler
+        if (this.scheduleActivateBtn) {
+            this.scheduleActivateBtn.addEventListener('click', () => {
+                this.activateSchedule();
+            });
+        }
     }
     
     async selectFormula(color) {
@@ -157,6 +165,9 @@ class SelectionController {
             // Show scent description
             this.showScentDescription(color);
             
+            // Hide schedule info immediately when user manually overrides
+            this.hideScheduleInfo();
+            
             // Check if a schedule was paused
             if (response.paused_schedule) {
                 const pausedFormula = getFormulaDisplayName(response.paused_schedule.formula);
@@ -165,11 +176,6 @@ class SelectionController {
                     `⏸️ Paused scheduled ${pausedFormula} (${timeRange}) - Manual override active`
                 );
             }
-            
-            // Show schedule info after backend processing (with a small delay to ensure pause is processed)
-            setTimeout(() => {
-                this.showScheduleInfo();
-            }, 100);
             
             window.notifications.success(
                 `${getFormulaDisplayName(color)} formula activated (${this.diffusionDuration}s of ${this.cycleTime}s)`
@@ -206,6 +212,9 @@ class SelectionController {
             // Hide scent description
             this.hideScentDescription();
             
+            // Hide schedule info immediately when user manually stops
+            this.hideScheduleInfo();
+            
             // Check if a schedule was paused
             if (response.paused_schedule) {
                 const pausedFormula = getFormulaDisplayName(response.paused_schedule.formula);
@@ -214,11 +223,6 @@ class SelectionController {
                     `⏸️ Paused scheduled ${pausedFormula} (${timeRange}) - Manual stop requested`
                 );
             }
-            
-            // Show schedule info after backend processing (with a small delay to ensure pause is processed)
-            setTimeout(() => {
-                this.showScheduleInfo();
-            }, 100);
             
             window.notifications.success('All formulas deactivated');
             
@@ -741,7 +745,8 @@ class SelectionController {
                 const scheduleId = activeSchedule.id;
                 this.scheduleEditLink.href = `/schedule/${scheduleId}`;
                 
-                // Show the container
+                // Apply color class based on formula and show the container
+                this.applyScheduleColor(scheduledFormula);
                 this.scheduleInfo.classList.remove('hidden');
                 
                 return true; // Schedule info was shown
@@ -767,7 +772,8 @@ class SelectionController {
                 // Update edit link (we might not have the ID for paused, so link to main schedule page)
                 this.scheduleEditLink.href = `/schedule`;
                 
-                // Show the container
+                // Apply color class based on formula and show the container
+                this.applyScheduleColor(scheduledFormula);
                 this.scheduleInfo.classList.remove('hidden');
                 
                 return true; // Paused schedule info was shown
@@ -785,8 +791,35 @@ class SelectionController {
     hideScheduleInfo() {
         if (!this.scheduleInfo) return;
         
-        // Hide the container
+        // Clear color classes and hide the container
+        this.clearScheduleColor();
         this.scheduleInfo.classList.add('hidden');
+        console.log('Schedule info hidden due to manual override');
+    }
+    
+    applyScheduleColor(formula) {
+        if (!this.scheduleInfo) return;
+        
+        // Clear existing color classes
+        this.clearScheduleColor();
+        
+        // Apply the appropriate color class based on formula using scent names
+        if (formula && ['red', 'blue', 'yellow', 'green'].includes(formula)) {
+            const colorMapping = {
+                'yellow': 'amber',
+                'green': 'sage',
+                'blue': 'azure',
+                'red': 'crimson'
+            };
+            this.scheduleInfo.classList.add(colorMapping[formula]);
+        }
+    }
+    
+    clearScheduleColor() {
+        if (!this.scheduleInfo) return;
+        
+        // Remove all scent color classes
+        this.scheduleInfo.classList.remove('amber', 'sage', 'azure', 'crimson');
     }
     
     async toggleScheduleStatus() {
@@ -806,10 +839,16 @@ class SelectionController {
                         `▶️ Resumed scheduled ${resumedFormula} (${timeRange})`
                     );
                     
-                    // Refresh the schedule info to show active status
+                    // Immediately update the button to ACTIVE
+                    this.updateScheduleButtonToActive(response.resumed_schedule);
+                    
+                    // If schedule page is open, reload it to show updated status
+                    this.reloadSchedulePageIfOpen();
+                    
+                    // Reload the page after a short delay to show the resumed schedule
                     setTimeout(() => {
-                        this.showScheduleInfo();
-                    }, 100);
+                        window.location.reload();
+                    }, 1000);
                 }
             } else {
                 // Pause the active schedule
@@ -822,16 +861,54 @@ class SelectionController {
                         `⏸️ Paused scheduled ${pausedFormula} (${timeRange})`
                     );
                     
-                    // Refresh the schedule info to show paused status
+                    // Immediately update the button to PAUSED
+                    this.updateScheduleButtonToPaused(response.paused_schedule);
+                    
+                    // If schedule page is open, reload it to show updated status
+                    this.reloadSchedulePageIfOpen();
+                    
+                    // Reload the page after a short delay to show the paused schedule
                     setTimeout(() => {
-                        this.showScheduleInfo();
-                    }, 100);
+                        window.location.reload();
+                    }, 1000);
                 }
             }
             
         } catch (error) {
             console.error('Error toggling schedule status:', error);
             window.notifications.error('Error changing schedule status');
+        }
+    }
+    
+    async activateSchedule() {
+        if (!this.scheduleStatus) return;
+        
+        try {
+            // Resume the paused schedule using the same logic as toggleScheduleStatus
+            const response = await window.api.post('/api/resume-schedule', {});
+            
+            if (response.resumed_schedule) {
+                const resumedFormula = this.getFormulaDisplayName(response.resumed_schedule.formula);
+                const timeRange = `${response.resumed_schedule.start_time}-${response.resumed_schedule.end_time}`;
+                window.notifications.success(
+                    `✅ Activated scheduled ${resumedFormula} (${timeRange})`
+                );
+                
+                // Immediately update the button to ACTIVE
+                this.updateScheduleButtonToActive(response.resumed_schedule);
+                
+                // If schedule page is open, reload it to show updated status
+                this.reloadSchedulePageIfOpen();
+                
+                // Reload the page after a short delay to show the resumed schedule
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+            
+        } catch (error) {
+            console.error('Error activating schedule:', error);
+            window.notifications.error('Error activating schedule');
         }
     }
     
@@ -845,6 +922,83 @@ class SelectionController {
         return displayNames[color] || color.charAt(0).toUpperCase() + color.slice(1);
     }
     
+    updateScheduleButtonToPaused(pausedSchedule) {
+        // Immediately update the schedule status button to show PAUSED state
+        if (this.scheduleStatus && this.scheduleDetails && this.scheduleInfo) {
+            const scent = this.getFormulaDisplayName(pausedSchedule.formula);
+            const recurrence = this.getRecurrenceDisplayName(pausedSchedule.recurrence || 'daily');
+            const startTime = pausedSchedule.start_time || 'Unknown';
+            const endTime = pausedSchedule.end_time || 'Unknown';
+            
+            // Update schedule details
+            this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
+            this.scheduleDetails.style.color = '#ff9800'; // Orange color for paused
+            
+            // Update status button immediately
+            this.scheduleStatus.textContent = 'PAUSED';
+            this.scheduleStatus.className = 'schedule-status-btn paused';
+            this.scheduleStatus.title = 'Click to resume schedule';
+            
+            // Show activate button when paused
+            if (this.scheduleActivateBtn) {
+                this.scheduleActivateBtn.classList.remove('hidden');
+            }
+            
+            // Apply color and show the schedule info container
+            this.applyScheduleColor(pausedSchedule.formula);
+            this.scheduleInfo.classList.remove('hidden');
+            
+            console.log('Immediately updated schedule button to PAUSED state');
+        }
+    }
+
+    updateScheduleButtonToActive(activeSchedule) {
+        // Immediately update the schedule status button to show ACTIVE state
+        if (this.scheduleStatus && this.scheduleDetails && this.scheduleInfo) {
+            const scent = this.getFormulaDisplayName(activeSchedule.formula);
+            const recurrence = this.getRecurrenceDisplayName(activeSchedule.recurrence || 'daily');
+            const startTime = activeSchedule.start_time || 'Unknown';
+            const endTime = activeSchedule.end_time || 'Unknown';
+            
+            // Update schedule details
+            this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
+            this.scheduleDetails.style.color = ''; // Reset color (back to default)
+            
+            // Update status button immediately
+            this.scheduleStatus.textContent = 'ACTIVE';
+            this.scheduleStatus.className = 'schedule-status-btn';
+            this.scheduleStatus.title = 'Click to pause schedule';
+            
+            // Hide activate button when active
+            if (this.scheduleActivateBtn) {
+                this.scheduleActivateBtn.classList.add('hidden');
+            }
+            
+            // Apply color and show the schedule info container
+            this.applyScheduleColor(activeSchedule.formula);
+            this.scheduleInfo.classList.remove('hidden');
+            
+            console.log('Immediately updated schedule button to ACTIVE state');
+        }
+    }
+
+    reloadSchedulePageIfOpen() {
+        // Check if we have multiple windows/tabs and communicate with schedule page
+        try {
+            // Use localStorage to signal schedule page to reload
+            localStorage.setItem('scheduleReloadRequested', Date.now().toString());
+            
+            // Also send a message to other windows/tabs
+            if (window.BroadcastChannel) {
+                const channel = new BroadcastChannel('schedule-updates');
+                channel.postMessage({ type: 'reload-schedules', timestamp: Date.now() });
+                channel.close();
+            }
+        } catch (error) {
+            console.log('Could not signal schedule page reload:', error);
+        }
+    }
+
     getRecurrenceDisplayName(recurrence) {
         const displayNames = {
             'once': 'One-Time Only',

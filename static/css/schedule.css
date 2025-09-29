@@ -263,11 +263,32 @@
 }
 
 /* Paused schedule styling */
-.daily-event.paused {
+.daily-event.paused,
+.schedule-event.paused,
+.schedule-indicator.paused,
+div.daily-event.paused,
+div.schedule-event.paused,
+div.schedule-indicator.paused {
     background: #9e9e9e !important;
-    opacity: 0.7;
-    filter: grayscale(0.3);
-    border: 2px dashed #666;
+    opacity: 0.7 !important;
+    filter: grayscale(0.3) !important;
+    border: 2px dashed #666 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    user-select: none !important;
+}
+
+.daily-event.paused:hover,
+.schedule-event.paused:hover,
+.schedule-indicator.paused:hover,
+div.daily-event.paused:hover,
+div.schedule-event.paused:hover,
+div.schedule-indicator.paused:hover {
+    opacity: 0.9 !important;
+    transform: scale(1.02) !important;
+    border-color: #555 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
 }
 
 .daily-event-time {
@@ -428,13 +449,7 @@
     background: var(--green);
 }
 
-/* Paused schedule styling */
-.schedule-event.paused {
-    background: #9e9e9e !important;
-    opacity: 0.7;
-    filter: grayscale(0.3);
-    border: 2px dashed #666;
-}
+
 
 .schedule-event-time {
     font-weight: 600;
@@ -474,13 +489,7 @@
     background: var(--green);
 }
 
-/* Paused schedule indicator styling */
-.schedule-indicator.paused {
-    background: #9e9e9e !important;
-    opacity: 0.7;
-    filter: grayscale(0.3);
-    border: 1px dashed #666;
-}
+
 
 /* Modal Styles */
 .modal {
@@ -969,4 +978,47 @@
     .month-date {
         min-height: 70px;
     }
+}
+
+/* Calendar Activate Button */
+.calendar-activate-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.calendar-activate-btn:hover {
+    background: #45a049;
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.4);
+}
+
+/* Ensure schedule events have relative positioning for the activate button */
+.schedule-event {
+    position: relative;
+}
+
+.schedule-event.paused,
+.daily-event.paused {
+    padding-right: 25px; /* Make room for the activate button */
+}
+
+/* Apply to different event types */
+.schedule-event.paused .calendar-activate-btn,
+.daily-event.paused .calendar-activate-btn {
+    display: flex;
 }

@@ -458,20 +458,37 @@
 
 /* Schedule Information Styles */
 .schedule-info {
-    margin-top: 0.5rem;
-    padding: 0.8rem 1.2rem;
-    background: rgba(100, 100, 100, 0.9);
-    backdrop-filter: blur(15px);
-    border-radius: 12px;
+    margin-top: 1rem;
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 15px;
     box-shadow: var(--shadow);
-    border: 1px solid rgba(150, 150, 150, 0.3);
+    border: 1px solid var(--border);
     text-align: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 1;
     transform: translateY(0);
-    max-width: 400px;
+    max-width: 500px;
     margin-left: auto;
     margin-right: auto;
+}
+
+/* Schedule Information Color Variants */
+.schedule-info.amber {
+    background: rgba(197, 165, 74, 0.75);
+}
+
+.schedule-info.sage {
+    background: rgba(107, 155, 107, 0.75);
+}
+
+.schedule-info.azure {
+    background: rgba(74, 144, 197, 0.75);
+}
+
+.schedule-info.crimson {
+    background: rgba(197, 85, 74, 0.75);
 }
 
 .schedule-info.hidden {
@@ -482,29 +499,31 @@
 
 .schedule-text {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 0.3rem;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .schedule-label {
-    font-size: 0.9rem;
+    font-size: 0.7rem;
     font-weight: 600;
     color: white;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 #schedule-details {
-    font-size: 0.95rem;
+    font-size: 0.75rem;
     color: white;
     font-weight: 500;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .schedule-link {
-    font-size: 0.8rem;
+    font-size: 0.65rem;
     color: #ffffff;
     text-decoration: underline;
     font-weight: 600;
@@ -518,7 +537,7 @@
 }
 
 .schedule-status-container {
-    font-size: 0.85rem;
+    font-size: 0.7rem;
     color: white;
 }
 
@@ -548,6 +567,31 @@
 
 .schedule-status-btn.paused:hover {
     background: #f57c00;
+}
+
+.schedule-activate-btn {
+    background: #4CAF50;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    margin-left: 0.3rem;
+}
+
+.schedule-activate-btn:hover {
+    background: #45a049;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.schedule-activate-btn.hidden {
+    display: none;
 }
 
 /* Mobile optimizations */

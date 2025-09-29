@@ -21,6 +21,7 @@ class SimpleScheduleManager {
         this.bindEvents();
         this.setupStrengthSlider();
         this.setupRecurrenceHandler();
+        this.setupScheduleReloadListener();
         this.loadSchedules().then(() => {
             // Start with daily view and render immediately
             this.switchView('daily');
@@ -85,11 +86,17 @@ class SimpleScheduleManager {
             if (e.target.classList.contains('time-slot')) {
                 const hour = parseInt(e.target.dataset.hour);
                 this.handleTimeSlotClick(hour);
+            } else if (e.target.classList.contains('calendar-activate-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                const scheduleId = parseInt(e.target.dataset.id);
+                this.activateSchedule(scheduleId);
             } else if (e.target.classList.contains('schedule-event') || e.target.closest('.schedule-event')) {
                 // Handle clicks on schedule events
                 const eventElement = e.target.classList.contains('schedule-event') ? e.target : e.target.closest('.schedule-event');
                 if (eventElement && eventElement.dataset.id) {
                     const scheduleId = parseInt(eventElement.dataset.id);
+                    console.log('Schedule event clicked:', scheduleId, 'isPaused:', eventElement.classList.contains('paused'));
                     this.editSchedule(scheduleId);
                 }
             } else if (e.target.classList.contains('schedule-indicator') || e.target.closest('.schedule-indicator')) {
@@ -97,6 +104,7 @@ class SimpleScheduleManager {
                 const indicatorElement = e.target.classList.contains('schedule-indicator') ? e.target : e.target.closest('.schedule-indicator');
                 if (indicatorElement && indicatorElement.dataset.id) {
                     const scheduleId = parseInt(indicatorElement.dataset.id);
+                    console.log('Schedule indicator clicked:', scheduleId, 'isPaused:', indicatorElement.classList.contains('paused'));
                     this.editSchedule(scheduleId);
                 }
             } else if (e.target.classList.contains('week-day-slot')) {
@@ -163,6 +171,11 @@ class SimpleScheduleManager {
             console.error('Schedule not found:', id);
             window.notifications.error('Schedule not found');
             return;
+        }
+        
+        // Debug log for paused schedules
+        if (schedule.paused) {
+            console.log('Editing paused schedule:', schedule);
         }
 
         this.editingId = id;
@@ -412,6 +425,47 @@ class SimpleScheduleManager {
         return result;
     }
 
+    async activateSchedule(id) {
+        console.log('Activating schedule with ID:', id);
+        const schedule = this.schedules.find(s => s.id === id);
+        if (!schedule) {
+            console.error('Schedule not found:', id);
+            window.notifications.error('Schedule not found');
+            return;
+        }
+
+        if (!schedule.paused) {
+            window.notifications.info('Schedule is already active');
+            return;
+        }
+
+        try {
+            // Use the same update logic but just send the existing schedule data to reactivate it
+            const formData = {
+                start_time: schedule.start_time,
+                end_time: schedule.end_time,
+                formula: schedule.formula,
+                recurrence: schedule.recurrence,
+                duration: schedule.duration,
+                date: schedule.date
+            };
+
+            const result = await this.updateSchedule(id, formData);
+            
+            window.notifications.success(
+                `✅ Activated schedule: ${this.getFormulaName(schedule.formula)} from ${this.formatTime(schedule.start_time)} to ${this.formatTime(schedule.end_time)}`
+            );
+
+            // Reload schedules to get updated status
+            await this.loadSchedules();
+            this.renderCalendarView();
+            
+        } catch (error) {
+            console.error('Error activating schedule:', error);
+            window.notifications.error('Failed to activate schedule: ' + error.message);
+        }
+    }
+
     async deleteSchedule(id) {
         const schedule = this.schedules.find(s => s.id === id);
         if (!schedule) return;
@@ -514,6 +568,34 @@ class SimpleScheduleManager {
         }
     }
 
+    setupScheduleReloadListener() {
+        // Listen for reload requests from other pages (like selection page)
+        if (window.BroadcastChannel) {
+            const channel = new BroadcastChannel('schedule-updates');
+            channel.addEventListener('message', (event) => {
+                if (event.data.type === 'reload-schedules') {
+                    console.log('Received schedule reload request');
+                    this.loadSchedules().then(() => {
+                        this.renderCalendarView();
+                    });
+                }
+            });
+        }
+        
+        // Also listen for localStorage changes
+        let lastReloadRequest = localStorage.getItem('scheduleReloadRequested') || '0';
+        setInterval(() => {
+            const currentReloadRequest = localStorage.getItem('scheduleReloadRequested') || '0';
+            if (currentReloadRequest !== lastReloadRequest) {
+                console.log('Detected schedule reload request via localStorage');
+                lastReloadRequest = currentReloadRequest;
+                this.loadSchedules().then(() => {
+                    this.renderCalendarView();
+                });
+            }
+        }, 1000);
+    }
+
     checkForEditParameter() {
         // Check if template provided an edit schedule ID
         const editId = window.editScheduleId;
@@ -532,57 +614,7 @@ class SimpleScheduleManager {
         }
     }
 
-    renderSchedules() {
-        const container = document.getElementById('schedule-list');
-        if (!container) return;
 
-        if (this.schedules.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>No Schedules</h3>
-                    <p>Click "Add Schedule" to create your first automated scent activation</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Sort schedules by start time
-        const sortedSchedules = [...this.schedules].sort((a, b) => {
-            const timeA = a.start_time || a.time || '';
-            const timeB = b.start_time || b.time || '';
-            return timeA.localeCompare(timeB);
-        });
-
-        container.innerHTML = sortedSchedules.map(schedule => this.renderScheduleItem(schedule)).join('');
-    }
-
-    renderScheduleItem(schedule) {
-        const startTime = schedule.start_time || schedule.time || '';
-        const endTime = schedule.end_time || '';
-
-        return `
-            <div class="schedule-item">
-                <div class="schedule-main">
-                    <div class="schedule-time">
-                        ${this.formatTime(startTime)} - ${this.formatTime(endTime)}
-                    </div>
-                    <div class="schedule-formula ${schedule.formula}">
-                        ${this.getFormulaName(schedule.formula)}
-                    </div>
-                </div>
-                
-                <div class="schedule-details">
-                    <span class="schedule-recurrence">${this.getRecurrenceName(schedule.recurrence)}</span>
-                    <span class="schedule-params">Strength: ${schedule.duration || 10}s of 60s</span>
-                </div>
-                
-                <div class="schedule-actions">
-                    <button class="edit-btn" data-id="${schedule.id}" title="Edit">✏️</button>
-                    <button class="delete-btn" data-id="${schedule.id}" title="Delete">🗑️</button>
-                </div>
-            </div>
-        `;
-    }
 
     formatTime(timeString) {
         if (!timeString) return '';
@@ -629,26 +661,10 @@ class SimpleScheduleManager {
             btn.classList.toggle('active', btn.dataset.view === view);
         });
         
-        // Show/hide appropriate containers
-        const scheduleList = document.getElementById('schedule-list');
-        const calendarContainer = document.getElementById('calendar-container');
-        const calendarNav = document.getElementById('calendar-navigation');
-        
-        if (view === 'list') {
-            if (scheduleList) scheduleList.style.display = 'flex';
-            if (calendarContainer) calendarContainer.style.display = 'none';
-            if (calendarNav) calendarNav.style.display = 'none';
-            this.renderSchedules();
-        } else {
-            if (scheduleList) scheduleList.style.display = 'none';
-            if (calendarContainer) calendarContainer.style.display = 'block';
-            if (calendarNav) calendarNav.style.display = 'flex';
-            
-            // Force render calendar view after a short delay to ensure DOM is ready
-            setTimeout(() => {
-                this.renderCalendarView();
-            }, 50);
-        }
+        // Force render calendar view after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            this.renderCalendarView();
+        }, 50);
     }
     
     navigatePrevious() {
@@ -907,12 +923,29 @@ class SimpleScheduleManager {
             indicator.dataset.id = schedule.id;
             indicator.style.cursor = 'pointer';
             
+            // Add direct click handler for paused schedules to ensure they work
+            if (schedule.paused) {
+                console.log('Creating paused schedule indicator for ID:', schedule.id);
+                indicator.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    console.log('Direct click on paused schedule indicator:', schedule.id);
+                    alert(`Clicked paused schedule indicator ${schedule.id} - ${schedule.formula}`);
+                    this.editSchedule(schedule.id);
+                });
+                // Force pointer events and styling
+                indicator.style.pointerEvents = 'auto !important';
+                indicator.style.cursor = 'pointer !important';
+                indicator.style.border = '3px solid red !important'; // Temporary visual indicator
+                console.log('Paused schedule indicator setup complete for:', schedule.id);
+            }
+            
             // Create more detailed tooltip
             const startTime = schedule.start_time || schedule.time || '';
             const endTime = schedule.end_time || '';
             const formulaName = this.getFormulaName(schedule.formula);
             
-            indicator.title = `${formulaName}: ${this.formatTime(startTime)}-${this.formatTime(endTime)}${hourSchedules.length > 1 ? ` (+${hourSchedules.length - 1} more)` : ''}`;
+            indicator.title = schedule.paused ? 'Click to edit paused schedule' : `${formulaName}: ${this.formatTime(startTime)}-${this.formatTime(endTime)}${hourSchedules.length > 1 ? ` (+${hourSchedules.length - 1} more)` : ''}`;
             
             // Add text content for better visibility
             const timeOnly = this.formatTime(startTime).split(' ')[0]; // Get just the time part
@@ -945,7 +978,13 @@ class SimpleScheduleManager {
     
     createScheduleEvent(schedule, compact = false) {
         const event = document.createElement('div');
-        event.className = `schedule-event ${schedule.formula}`;
+        
+        // Use appropriate class based on view context
+        if (this.currentView === 'daily') {
+            event.className = `daily-event ${schedule.formula}`;
+        } else {
+            event.className = `schedule-event ${schedule.formula}`;
+        }
         
         // Add paused class if schedule is paused
         if (schedule.paused) {
@@ -959,15 +998,19 @@ class SimpleScheduleManager {
         const startTime = schedule.start_time || schedule.time || '';
         const endTime = schedule.end_time || '';
         
+        const activateButton = schedule.paused ? `<button class="calendar-activate-btn" data-id="${schedule.id}" title="Activate Schedule">▶️</button>` : '';
+        
         if (compact) {
             event.innerHTML = `
                 <div class="schedule-event-time">${this.formatTime(startTime)}</div>
                 <div class="schedule-event-formula">${this.getFormulaName(schedule.formula)}</div>
+                ${activateButton}
             `;
         } else {
             event.innerHTML = `
                 <div class="schedule-event-time">${this.formatTime(startTime)}-${this.formatTime(endTime)}</div>
                 <div class="schedule-event-formula">${this.getFormulaName(schedule.formula)}</div>
+                ${activateButton}
             `;
         }
         
