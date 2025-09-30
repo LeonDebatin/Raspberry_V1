@@ -107,9 +107,7 @@
       "cycle_time": 60,
       "duration": 10,
       "recurrence": "daily",
-      "enabled": true,
-      "paused": true,
-      "paused_at": "2025-09-30T20:28:44.933297"
+      "enabled": true
     }
   ]
 }

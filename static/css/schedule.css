@@ -936,6 +936,15 @@ div.schedule-indicator.paused:hover {
         grid-template-columns: 45px repeat(7, 1fr);
     }
     
+    /* Fix activate button positioning on mobile */
+    .calendar-activate-btn {
+        position: absolute !important;
+        right: 2px !important;
+        top: 2px !important;
+        left: auto !important;
+        transform: none !important;
+    }
+    
     .time-label {
         padding: 0.5rem 0.1rem;
         font-size: 0.6rem;
