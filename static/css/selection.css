@@ -491,6 +491,11 @@
     background: rgba(197, 85, 74, 0.75);
 }
 
+.schedule-info.inactive {
+    background: rgba(150, 150, 150, 0.75);
+    border-left: 4px solid #999999;
+}
+
 .schedule-info.hidden {
     opacity: 0;
     transform: translateY(-10px);
@@ -568,6 +573,15 @@
 
 .schedule-status-btn.paused:hover {
     background: #777777;
+}
+
+.schedule-status-btn.inactive {
+    background: #666666;
+    cursor: not-allowed;
+}
+
+.schedule-status-btn.inactive:hover {
+    background: #666666;
 }
 
 .schedule-activate-btn {

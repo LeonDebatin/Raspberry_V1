@@ -272,11 +272,175 @@ class SelectionController {
         const scheduleInfo = document.getElementById('schedule-info');
         
         if (scheduleInfo && scheduleInfo.style.display !== 'none') {
-            // Hide the schedule info immediately
-            scheduleInfo.style.display = 'none';
+            // Make schedule info grey (inactive) but keep it visible
+            this.makeScheduleInfoInactive();
             
-            // Show warning message for 3 seconds
-            this.showWarningMessage('Schedule paused - Visit the <a href="#" onclick="showTab(\'schedule\')">Schedule tab</a> to reactivate');
+            // No warning message - just keep the grey schedule info visible
+        }
+    }
+    
+    makeScheduleInfoInactive() {
+        if (!this.scheduleInfo) return;
+        
+        // Remove all color classes and add inactive class
+        this.clearScheduleColor();
+        this.scheduleInfo.classList.add('inactive');
+        
+        // Update status to show inactive
+        if (this.scheduleStatus) {
+            this.scheduleStatus.textContent = 'INACTIVE';
+            this.scheduleStatus.className = 'schedule-status-btn inactive';
+            this.scheduleStatus.title = 'Schedule was deactivated by manual override';
+        }
+        
+        // Keep text color white (don't change to grey)
+        if (this.scheduleDetails) {
+            this.scheduleDetails.style.color = ''; // Reset to default (white)
+        }
+        
+        // Replace edit link with an activate button
+        if (this.scheduleEditLink) {
+            // Store the original link for restoration later
+            if (!this.originalEditLink) {
+                this.originalEditLink = {
+                    outerHTML: this.scheduleEditLink.outerHTML,
+                    parent: this.scheduleEditLink.parentNode
+                };
+            }
+            
+            // Create activate button
+            const activateBtn = document.createElement('button');
+            activateBtn.textContent = 'Activate Schedule';
+            activateBtn.className = 'schedule-link activate-btn';
+            
+            // Get the schedule color from current schedule or default to blue
+            const scheduleColor = this.currentSchedule?.formula || 'blue';
+            const scentColorMap = {
+                'blue': '#007bff',    // Azure - Blue
+                'yellow': '#ffc107',  // Amber - Yellow
+                'green': '#28a745',   // Sage - Green  
+                'red': '#dc3545'      // Crimson - Red
+            };
+            const buttonColor = scentColorMap[scheduleColor] || '#007bff';
+            
+            activateBtn.style.cssText = `
+                background: ${buttonColor};
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.8rem;
+                font-weight: 600;
+            `;
+            activateBtn.onclick = () => {
+                console.log('Activate Schedule button clicked');
+                this.activateCurrentSchedule();
+            };
+            console.log('Created activate button');
+            
+            // Replace the link with the button
+            this.scheduleEditLink.parentNode.replaceChild(activateBtn, this.scheduleEditLink);
+            this.scheduleEditLink = activateBtn; // Update reference
+        }
+    }
+    
+    restoreOriginalEditLink() {
+        // Only restore if we have a stored original and current element is a button
+        if (this.originalEditLink && this.scheduleEditLink && this.scheduleEditLink.tagName === 'BUTTON') {
+            // Create new link element from stored HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = this.originalEditLink.outerHTML;
+            const newLink = tempDiv.firstChild;
+            
+            // Replace button with original link
+            this.scheduleEditLink.parentNode.replaceChild(newLink, this.scheduleEditLink);
+            this.scheduleEditLink = newLink; // Update reference
+            
+            // Clear the stored original
+            this.originalEditLink = null;
+        }
+    }
+    
+    async activateCurrentSchedule() {
+        try {
+            console.log('🔄 Activating current schedule...');
+            
+            // If we have stored currentSchedule from when schedule info was displayed, use it
+            if (this.currentSchedule && this.currentSchedule.id) {
+                console.log('📋 Using stored schedule data:', this.currentSchedule);
+                
+                const scentName = this.getFormulaDisplayName(this.currentSchedule.formula);
+                
+                // Prepare the update data to unpause the schedule
+                const updateData = {
+                    start_time: this.currentSchedule.start_time,
+                    end_time: this.currentSchedule.end_time,
+                    formula: this.currentSchedule.formula,
+                    cycle_time: this.currentSchedule.cycle_time || 60,
+                    duration: this.currentSchedule.duration || 10,
+                    recurrence: this.currentSchedule.recurrence || "daily",
+                    enabled: true,
+                    paused: false  // Explicitly unpause
+                };
+                console.log('📤 Update data:', updateData);
+                
+                // Reactivate the paused schedule
+                const response = await window.api.put(`/api/schedules/${this.currentSchedule.id}`, updateData);
+                console.log('📥 API response:', response);
+                
+                if (response && (response.start_time || response.id)) {
+                    const timeRange = `${this.currentSchedule.start_time}-${this.currentSchedule.end_time}`;
+                    window.notifications.success(`✅ Reactivated scheduled ${scentName} (${timeRange})`);
+                    console.log('✅ Schedule reactivated successfully');
+                    // Reload the page to show updated schedule state
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    console.log('❌ API response unexpected format');
+                    window.notifications.error('Failed to reactivate schedule');
+                }
+                return;
+            }
+            
+            // Fallback: Try to find paused schedule via API
+            const scheduleResponse = await window.api.get('/api/schedule-status');
+            console.log('📊 Schedule response:', scheduleResponse);
+            
+            if (!scheduleResponse.paused_schedule) {
+                console.log('❌ No paused schedule found and no stored schedule data');
+                window.notifications.error('No paused schedule found to activate');
+                return;
+            }
+            
+            // Use the API response (same as before)
+            const pausedSchedule = scheduleResponse.paused_schedule;
+            const scentName = this.getFormulaDisplayName(pausedSchedule.formula);
+            
+            const response = await window.api.put(`/api/schedules/${pausedSchedule.id}`, {
+                start_time: pausedSchedule.start_time,
+                end_time: pausedSchedule.end_time,
+                formula: pausedSchedule.formula,
+                cycle_time: pausedSchedule.cycle_time || 60,
+                duration: pausedSchedule.duration || 10,
+                recurrence: pausedSchedule.recurrence || "daily",
+                enabled: true,
+                paused: false
+            });
+            
+            if (response && (response.start_time || response.id)) {
+                const timeRange = `${pausedSchedule.start_time}-${pausedSchedule.end_time}`;
+                window.notifications.success(`✅ Reactivated scheduled ${scentName} (${timeRange})`);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                window.notifications.error('Failed to reactivate schedule');
+            }
+        } catch (error) {
+            console.error('💥 Error reactivating schedule:', error);
+            window.notifications.error('Error reactivating schedule');
         }
     }
     
@@ -780,6 +944,8 @@ class SelectionController {
             // Check for any active schedule (regardless of current selection)
             if (scheduleResponse.active_schedule) {
                 const activeSchedule = scheduleResponse.active_schedule;
+                // Store the current active schedule
+                this.currentSchedule = activeSchedule;
                 const scheduledFormula = activeSchedule.formula;
                 const scent = this.getFormulaDisplayName(scheduledFormula);
                 const recurrence = this.getRecurrenceDisplayName(activeSchedule.recurrence || 'daily');
@@ -797,9 +963,14 @@ class SelectionController {
                     this.scheduleStatus.title = 'Click to pause schedule';
                 }
                 
+                // Restore original edit link if it was replaced with a button
+                this.restoreOriginalEditLink();
+                
                 // Update edit link to go to schedule page with the active schedule ID
                 const scheduleId = activeSchedule.id;
+                this.scheduleEditLink.textContent = 'Edit Schedule';
                 this.scheduleEditLink.href = `/schedule/${scheduleId}`;
+                this.scheduleEditLink.onclick = null; // Remove any custom click handler
                 
                 // Apply color class based on formula and show the container
                 this.applyScheduleColor(scheduledFormula);
@@ -810,6 +981,8 @@ class SelectionController {
             // Check for any paused schedule (regardless of current selection)
             else if (scheduleResponse.paused_schedule) {
                 const pausedSchedule = scheduleResponse.paused_schedule;
+                // Store the current paused schedule for the activate button
+                this.currentSchedule = pausedSchedule;
                 const scheduledFormula = pausedSchedule.formula;
                 const scent = this.getFormulaDisplayName(scheduledFormula);
                 const recurrence = this.getRecurrenceDisplayName(pausedSchedule.recurrence || 'daily');
@@ -827,8 +1000,13 @@ class SelectionController {
                     this.scheduleStatus.title = 'Click to resume schedule';
                 }
                 
+                // Restore original edit link if it was replaced with a button
+                this.restoreOriginalEditLink();
+                
                 // Update edit link (we might not have the ID for paused, so link to main schedule page)
+                this.scheduleEditLink.textContent = 'Edit Schedule';
                 this.scheduleEditLink.href = `/schedule`;
+                this.scheduleEditLink.onclick = null; // Remove any custom click handler
                 
                 // Show activate button for paused schedules
                 if (this.scheduleActivateBtn) {
