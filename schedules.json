@@ -39,7 +39,7 @@
       "id": 7,
       "start_time": "21:00",
       "end_time": "22:00",
-      "formula": "blue",
+      "formula": "red",
       "cycle_time": 60,
       "duration": 10,
       "recurrence": "daily",
@@ -53,7 +53,9 @@
       "cycle_time": 60,
       "duration": 10,
       "recurrence": "daily",
-      "enabled": true
+      "enabled": true,
+      "paused": true,
+      "paused_at": "2025-09-30T22:00:27.537846"
     },
     {
       "id": 9,

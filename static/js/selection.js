@@ -272,6 +272,15 @@ class SelectionController {
         const scheduleInfo = document.getElementById('schedule-info');
         
         if (scheduleInfo && scheduleInfo.style.display !== 'none') {
+            // Store the current schedule as inactive in localStorage for persistence
+            if (this.currentSchedule) {
+                localStorage.setItem('inactiveSchedule', JSON.stringify({
+                    ...this.currentSchedule,
+                    inactive: true,
+                    inactiveAt: Date.now()
+                }));
+            }
+            
             // Make schedule info grey (inactive) but keep it visible
             this.makeScheduleInfoInactive();
             
@@ -332,6 +341,7 @@ class SelectionController {
                 cursor: pointer;
                 font-size: 0.8rem;
                 font-weight: 600;
+                opacity: 0.75;
             `;
             activateBtn.onclick = () => {
                 console.log('Activate Schedule button clicked');
@@ -393,10 +403,14 @@ class SelectionController {
                     const timeRange = `${this.currentSchedule.start_time}-${this.currentSchedule.end_time}`;
                     window.notifications.success(`✅ Reactivated scheduled ${scentName} (${timeRange})`);
                     console.log('✅ Schedule reactivated successfully');
+                    
+                    // Clear the stored inactive schedule since it's now active
+                    localStorage.removeItem('inactiveSchedule');
+                    
                     // Reload the page to show updated schedule state
                     setTimeout(() => {
                         window.location.reload();
-                    }, 1000);
+                    }, 200); // Faster reload
                 } else {
                     console.log('❌ API response unexpected format');
                     window.notifications.error('Failed to reactivate schedule');
@@ -434,7 +448,7 @@ class SelectionController {
                 window.notifications.success(`✅ Reactivated scheduled ${scentName} (${timeRange})`);
                 setTimeout(() => {
                     window.location.reload();
-                }, 1000);
+                }, 500); // Faster reload
             } else {
                 window.notifications.error('Failed to reactivate schedule');
             }
@@ -1020,9 +1034,73 @@ class SelectionController {
                 this.scheduleInfo.classList.remove('hidden');
                 
                 return true; // Paused schedule info was shown
-            } else {
+            } 
+            // Check if we have a stored currentSchedule that should remain visible as inactive
+            else if (this.currentSchedule && this.currentSchedule.id) {
+                console.log('📋 Showing stored schedule as inactive');
+                
+                const scheduledFormula = this.currentSchedule.formula;
+                const scent = this.getFormulaDisplayName(scheduledFormula);
+                const recurrence = this.getRecurrenceDisplayName(this.currentSchedule.recurrence || 'daily');
+                const startTime = this.currentSchedule.start_time || 'Unknown';
+                const endTime = this.currentSchedule.end_time || 'Unknown';
+                
+                // Update schedule details text
+                this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
+                this.scheduleDetails.style.color = ''; // Reset color
+                
+                // Show as inactive
+                this.makeScheduleInfoInactive();
+                
+                // Apply color class and show the container
+                this.applyScheduleColor(scheduledFormula);
+                this.scheduleInfo.classList.remove('hidden');
+                
+                return true; // Inactive schedule info was shown
+            }
+            // Check for stored inactive schedule from localStorage
+            else {
+                const storedInactiveSchedule = localStorage.getItem('inactiveSchedule');
+                if (storedInactiveSchedule) {
+                    try {
+                        const inactiveSchedule = JSON.parse(storedInactiveSchedule);
+                        // Only show if it's recent (within last 24 hours)
+                        const hoursSinceInactive = (Date.now() - inactiveSchedule.inactiveAt) / (1000 * 60 * 60);
+                        
+                        if (hoursSinceInactive < 24) {
+                            console.log('📋 Showing stored inactive schedule from localStorage');
+                            
+                            this.currentSchedule = inactiveSchedule;
+                            const scheduledFormula = inactiveSchedule.formula;
+                            const scent = this.getFormulaDisplayName(scheduledFormula);
+                            const recurrence = this.getRecurrenceDisplayName(inactiveSchedule.recurrence || 'daily');
+                            const startTime = inactiveSchedule.start_time || 'Unknown';
+                            const endTime = inactiveSchedule.end_time || 'Unknown';
+                            
+                            // Update schedule details text
+                            this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
+                            this.scheduleDetails.style.color = ''; // Reset color
+                            
+                            // Show as inactive
+                            this.makeScheduleInfoInactive();
+                            
+                            // Apply color class and show the container
+                            this.applyScheduleColor(scheduledFormula);
+                            this.scheduleInfo.classList.remove('hidden');
+                            
+                            return true; // Stored inactive schedule info was shown
+                        } else {
+                            // Remove old inactive schedule
+                            localStorage.removeItem('inactiveSchedule');
+                        }
+                    } catch (e) {
+                        console.error('Error parsing stored inactive schedule:', e);
+                        localStorage.removeItem('inactiveSchedule');
+                    }
+                }
+                
                 this.hideScheduleInfo();
-                return false; // No active or paused schedule
+                return false; // No schedule to show
             }
         } catch (error) {
             console.error('Error loading schedule info:', error);
