@@ -91,9 +91,12 @@ class SimpleScheduleManager {
                 e.stopPropagation();
                 const scheduleId = parseInt(e.target.dataset.id);
                 this.activateSchedule(scheduleId);
-            } else if (e.target.classList.contains('schedule-event') || e.target.closest('.schedule-event')) {
-                // Handle clicks on schedule events
-                const eventElement = e.target.classList.contains('schedule-event') ? e.target : e.target.closest('.schedule-event');
+            } else if (e.target.classList.contains('schedule-event') || e.target.closest('.schedule-event') || 
+                       e.target.classList.contains('daily-event') || e.target.closest('.daily-event')) {
+                // Handle clicks on schedule events (both schedule-event and daily-event)
+                const eventElement = e.target.classList.contains('schedule-event') ? e.target : 
+                                   e.target.closest('.schedule-event') ||
+                                   (e.target.classList.contains('daily-event') ? e.target : e.target.closest('.daily-event'));
                 if (eventElement && eventElement.dataset.id) {
                     const scheduleId = parseInt(eventElement.dataset.id);
                     console.log('Schedule event clicked:', scheduleId, 'isPaused:', eventElement.classList.contains('paused'));

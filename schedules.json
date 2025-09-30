@@ -61,11 +61,9 @@
       "end_time": "20:00",
       "formula": "blue",
       "cycle_time": 60,
-      "duration": 10,
+      "duration": 50,
       "recurrence": "daily",
-      "enabled": true,
-      "paused": true,
-      "paused_at": "2025-09-30T19:22:31.038313"
+      "enabled": true
     },
     {
       "id": 10,
@@ -76,6 +74,42 @@
       "duration": 10,
       "recurrence": "daily",
       "enabled": true
+    },
+    {
+      "id": 11,
+      "start_time": "20:00",
+      "end_time": "21:00",
+      "formula": "green",
+      "cycle_time": 60,
+      "duration": 10,
+      "recurrence": "once",
+      "enabled": false,
+      "schedule_date": "2025-09-30",
+      "executed": true
+    },
+    {
+      "id": 12,
+      "start_time": "20:00",
+      "end_time": "21:00",
+      "formula": "yellow",
+      "cycle_time": 60,
+      "duration": 10,
+      "recurrence": "once",
+      "enabled": false,
+      "schedule_date": "2025-09-30",
+      "executed": true
+    },
+    {
+      "id": 13,
+      "start_time": "20:00",
+      "end_time": "21:00",
+      "formula": "red",
+      "cycle_time": 60,
+      "duration": 10,
+      "recurrence": "daily",
+      "enabled": true,
+      "paused": true,
+      "paused_at": "2025-09-30T20:14:02.105076"
     }
   ]
 }

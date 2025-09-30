@@ -116,7 +116,7 @@ class SimpleGPIOController:
                 # Stop any existing thread
                 self.stop_event.set()
                 if self.active_thread and self.active_thread.is_alive():
-                    self.active_thread.join(timeout=1)
+                    self.active_thread.join(timeout=0.1)  # Reduced timeout for faster response
                 
                 # Start new activation thread
                 self.stop_event.clear()
@@ -191,7 +191,7 @@ class SimpleGPIOController:
             # Stop activation thread
             self.stop_event.set()
             if self.active_thread and self.active_thread.is_alive():
-                self.active_thread.join(timeout=2)
+                self.active_thread.join(timeout=0.1)  # Reduced timeout for faster response
             
             # Turn off all pins
             for color, pin in self.pin_mapping.items():

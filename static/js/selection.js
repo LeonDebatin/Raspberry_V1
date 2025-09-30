@@ -790,10 +790,12 @@ class SelectionController {
                 this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
                 this.scheduleDetails.style.color = ''; // Reset color
                 
-                // Update status button
-                this.scheduleStatus.textContent = 'ACTIVE';
-                this.scheduleStatus.className = 'schedule-status-btn';
-                this.scheduleStatus.title = 'Click to pause schedule';
+                // Update status button (if it exists)
+                if (this.scheduleStatus) {
+                    this.scheduleStatus.textContent = 'ACTIVE';
+                    this.scheduleStatus.className = 'schedule-status-btn';
+                    this.scheduleStatus.title = 'Click to pause schedule';
+                }
                 
                 // Update edit link to go to schedule page with the active schedule ID
                 const scheduleId = activeSchedule.id;
@@ -818,10 +820,12 @@ class SelectionController {
                 this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
                 this.scheduleDetails.style.color = '#ff9800'; // Orange color for paused
                 
-                // Update status button
-                this.scheduleStatus.textContent = 'PAUSED';
-                this.scheduleStatus.className = 'schedule-status-btn paused';
-                this.scheduleStatus.title = 'Click to resume schedule';
+                // Update status button (if it exists)
+                if (this.scheduleStatus) {
+                    this.scheduleStatus.textContent = 'PAUSED';
+                    this.scheduleStatus.className = 'schedule-status-btn paused';
+                    this.scheduleStatus.title = 'Click to resume schedule';
+                }
                 
                 // Update edit link (we might not have the ID for paused, so link to main schedule page)
                 this.scheduleEditLink.href = `/schedule`;
