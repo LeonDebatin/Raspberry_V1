@@ -1001,7 +1001,19 @@ class SimpleScheduleManager {
         const startTime = schedule.start_time || schedule.time || '';
         const endTime = schedule.end_time || '';
         
-        const activateButton = schedule.paused ? `<button class="calendar-activate-btn" data-id="${schedule.id}" title="Activate Schedule">▶️</button>` : '';
+        // Get color class for activate button based on formula
+        const getActivateButtonColorClass = (formula) => {
+            const colorMapping = {
+                'red': 'crimson',
+                'blue': 'azure', 
+                'yellow': 'amber',
+                'green': 'sage'
+            };
+            return colorMapping[formula] || '';
+        };
+        
+        const colorClass = schedule.paused ? getActivateButtonColorClass(schedule.formula) : '';
+        const activateButton = schedule.paused ? `<button class="calendar-activate-btn ${colorClass}" data-id="${schedule.id}" title="Activate Schedule">►</button>` : '';
         
         if (compact) {
             event.innerHTML = `

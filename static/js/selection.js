@@ -830,6 +830,13 @@ class SelectionController {
                 // Update edit link (we might not have the ID for paused, so link to main schedule page)
                 this.scheduleEditLink.href = `/schedule`;
                 
+                // Show activate button for paused schedules
+                if (this.scheduleActivateBtn) {
+                    this.scheduleActivateBtn.classList.remove('hidden');
+                    // Apply the schedule color to the activate button
+                    this.applyActivateButtonColor(scheduledFormula);
+                }
+                
                 // Apply color class based on formula and show the container
                 this.applyScheduleColor(scheduledFormula);
                 this.scheduleInfo.classList.remove('hidden');
@@ -878,6 +885,24 @@ class SelectionController {
         
         // Remove all scent color classes
         this.scheduleInfo.classList.remove('amber', 'sage', 'azure', 'crimson');
+    }
+    
+    applyActivateButtonColor(formula) {
+        if (!this.scheduleActivateBtn) return;
+        
+        // Clear existing color classes from the activate button
+        this.scheduleActivateBtn.classList.remove('crimson', 'azure', 'amber', 'sage');
+        
+        // Apply the appropriate color class based on formula using scent names
+        if (formula && ['red', 'blue', 'yellow', 'green'].includes(formula)) {
+            const colorMapping = {
+                'yellow': 'amber',
+                'green': 'sage',
+                'blue': 'azure',
+                'red': 'crimson'
+            };
+            this.scheduleActivateBtn.classList.add(colorMapping[formula]);
+        }
     }
     
     async toggleScheduleStatus() {
@@ -1000,6 +1025,8 @@ class SelectionController {
             // Show activate button when paused
             if (this.scheduleActivateBtn) {
                 this.scheduleActivateBtn.classList.remove('hidden');
+                // Apply the schedule color to the activate button
+                this.applyActivateButtonColor(pausedSchedule.formula);
             }
             
             // Apply color and show the schedule info container

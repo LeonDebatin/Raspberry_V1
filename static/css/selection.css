@@ -595,6 +595,39 @@
     display: none;
 }
 
+/* Schedule Activate Button Color Variants */
+.schedule-activate-btn.crimson {
+    background: var(--red);
+}
+
+.schedule-activate-btn.crimson:hover {
+    background: #b04a40;
+}
+
+.schedule-activate-btn.azure {
+    background: var(--blue);
+}
+
+.schedule-activate-btn.azure:hover {
+    background: #4080b0;
+}
+
+.schedule-activate-btn.amber {
+    background: var(--yellow);
+}
+
+.schedule-activate-btn.amber:hover {
+    background: #b09540;
+}
+
+.schedule-activate-btn.sage {
+    background: var(--green);
+}
+
+.schedule-activate-btn.sage:hover {
+    background: #5a8a5a;
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
     .config-bar {

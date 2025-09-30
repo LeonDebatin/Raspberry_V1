@@ -1009,6 +1009,43 @@ div.schedule-indicator.paused:hover {
     box-shadow: 0 2px 6px rgba(68, 68, 68, 0.4);
 }
 
+/* Calendar Activate Button Color Variants */
+.calendar-activate-btn.crimson {
+    background: #dc3545 !important;
+}
+
+.calendar-activate-btn.crimson:hover {
+    background: #c41e3a !important;
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.4);
+}
+
+.calendar-activate-btn.azure {
+    background: #007bff !important;
+}
+
+.calendar-activate-btn.azure:hover {
+    background: #0056b3 !important;
+    box-shadow: 0 2px 6px rgba(0, 123, 255, 0.4);
+}
+
+.calendar-activate-btn.amber {
+    background: #ffc107 !important;
+}
+
+.calendar-activate-btn.amber:hover {
+    background: #e0a800 !important;
+    box-shadow: 0 2px 6px rgba(255, 193, 7, 0.4);
+}
+
+.calendar-activate-btn.sage {
+    background: #28a745 !important;
+}
+
+.calendar-activate-btn.sage:hover {
+    background: #1e7e34 !important;
+    box-shadow: 0 2px 6px rgba(40, 167, 69, 0.4);
+}
+
 /* Ensure schedule events have relative positioning for the activate button */
 .schedule-event {
     position: relative;
