@@ -76,7 +76,7 @@
 
 .status-dot.active {
     background: var(--success);
-    box-shadow: 0 0 8px rgba(52, 168, 83, 0.3);
+    box-shadow: 0 0 8px rgba(85, 85, 85, 0.3);
 }
 
 /* Radial Control Layout */
@@ -542,7 +542,7 @@
 }
 
 .schedule-status-btn {
-    background: #4CAF50;
+    background: #d3d3d3;
     color: white;
     padding: 2px 8px;
     border-radius: 12px;
@@ -557,20 +557,21 @@
 }
 
 .schedule-status-btn:hover {
+    background: #b8b8b8;
     transform: scale(1.05);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .schedule-status-btn.paused {
-    background: #ff9800;
+    background: #999999;
 }
 
 .schedule-status-btn.paused:hover {
-    background: #f57c00;
+    background: #777777;
 }
 
 .schedule-activate-btn {
-    background: #4CAF50;
+    background: #d3d3d3;
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
@@ -585,7 +586,7 @@
 }
 
 .schedule-activate-btn:hover {
-    background: #45a049;
+    background: #b8b8b8;
     transform: scale(1.05);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }

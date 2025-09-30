@@ -11,9 +11,9 @@
     --blue: #4a90c5;
     --yellow: #c5a54a;
     --green: #6b9b6b;
-    --accent: #7dd3c0;
-    --success: #34a853;
-    --error: #ea4335;
+    --accent: #666666;
+    --success: #555555;
+    --error: #333333;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     --radius: 12px;
     --transition: 0.2s ease;

@@ -291,7 +291,7 @@ class SelectionController {
                 position: fixed;
                 top: 20px;
                 right: -350px;
-                background: #ff6b6b;
+                background: #d3d3d3;
                 color: white;
                 padding: 15px 20px;
                 border-radius: 8px;

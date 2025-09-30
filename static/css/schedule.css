@@ -57,8 +57,8 @@
 
 .add-btn {
     padding: 1rem 2rem;
-    background: var(--accent);
-    color: var(--text-dark);
+    background: #d3d3d3;
+    color: white;
     border: none;
     border-radius: 25px;
     cursor: pointer;
@@ -69,6 +69,7 @@
 }
 
 .add-btn:hover {
+    background: #b8b8b8;
     transform: translateY(-3px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
@@ -120,8 +121,8 @@
 
 .today-btn {
     padding: 0.5rem 1rem;
-    background: var(--accent);
-    color: var(--text-dark);
+    background: #d3d3d3;
+    color: white;
     border: none;
     border-radius: 10px;
     cursor: pointer;
@@ -130,7 +131,7 @@
 }
 
 .today-btn:hover {
-    background: var(--success);
+    background: #b8b8b8;
 }
 
 /* Calendar Container */
@@ -215,7 +216,7 @@
 }
 
 .time-slot:hover {
-    background: rgba(125, 211, 192, 0.05);
+    background: rgba(128, 128, 128, 0.05);
 }
 
 /* Daily View Schedule Events */
@@ -357,7 +358,7 @@ div.schedule-indicator.paused:hover {
 }
 
 .week-day-slot:hover {
-    background: rgba(125, 211, 192, 0.05);
+    background: rgba(128, 128, 128, 0.05);
 }
 
 /* Monthly View */
@@ -393,7 +394,7 @@ div.schedule-indicator.paused:hover {
 }
 
 .month-date:hover {
-    background: rgba(125, 211, 192, 0.05);
+    background: rgba(128, 128, 128, 0.05);
 }
 
 .month-date.other-month {
@@ -402,8 +403,9 @@ div.schedule-indicator.paused:hover {
 }
 
 .month-date.today {
-    background: rgba(125, 211, 192, 0.1);
-    border: 2px solid var(--accent);
+    background: #d3d3d3;
+    color: white;
+    border: 2px solid #d3d3d3;
 }
 
 .date-number {
@@ -599,7 +601,7 @@ div.schedule-indicator.paused:hover {
 .form-group select:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(125, 211, 192, 0.1);
+    box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.1);
     background: white;
 }
 
@@ -711,7 +713,7 @@ div.schedule-indicator.paused:hover {
 }
 
 .btn-danger:hover {
-    background: #d32f2f;
+    background: #222222;
     transform: translateY(-1px);
 }
 
@@ -985,7 +987,7 @@ div.schedule-indicator.paused:hover {
     position: absolute;
     top: 2px;
     right: 2px;
-    background: #4CAF50;
+    background: #666666;
     color: white;
     border: none;
     border-radius: 50%;
@@ -1002,9 +1004,9 @@ div.schedule-indicator.paused:hover {
 }
 
 .calendar-activate-btn:hover {
-    background: #45a049;
+    background: #444444;
     transform: scale(1.1);
-    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 2px 6px rgba(68, 68, 68, 0.4);
 }
 
 /* Ensure schedule events have relative positioning for the activate button */
