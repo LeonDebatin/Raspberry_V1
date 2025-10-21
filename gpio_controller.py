@@ -138,22 +138,22 @@ class SimpleGPIOController:
     def _activation_cycle(self, pin, cycle_time, duration, color, is_scheduled=False, activation_duration=None):
         """Run the activation cycle in a separate thread"""
         try:
-            start_time = time.time()
+            # Set cycle_start_time once at the very beginning, right before the first GPIO fires
+            # This is the anchor point for all cycle calculations
+            with self.lock:
+                self.cycle_start_time = time.time()
+            self.logger.info(f"Cycle timing initialized at {self.cycle_start_time} for {color}")
+            
+            start_time = self.cycle_start_time
             
             while not self.stop_event.is_set():
-                # Set cycle_start_time right before GPIO fires (for accurate frontend sync)
-                if self.cycle_start_time is None:
-                    with self.lock:
-                        self.cycle_start_time = time.time()
-                    self.logger.info(f"Cycle started at {self.cycle_start_time} for {color}")
-                
                 # Check if scheduled activation should end (only for scheduled activations with duration)
                 if is_scheduled and activation_duration is not None and not self.user_override:
                     if time.time() - start_time >= activation_duration:
                         self.logger.info(f"Scheduled activation of {color} completed after {activation_duration}s")
                         break
                 
-                # Activate pin
+                # Activate pin (aligned with cycle_start_time)
                 self.gpio.output(pin, self.gpio.HIGH)
                 self.logger.debug(f"Pin {pin} ({color}) activated")
                 
