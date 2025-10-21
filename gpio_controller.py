@@ -89,7 +89,8 @@ class SimpleGPIOController:
                 self.active_formula = color
                 
                 # Track cycle timing for frontend synchronization
-                self.cycle_start_time = time.time()
+                # Note: cycle_start_time will be set in the thread right before GPIO fires
+                self.cycle_start_time = None  # Will be set when cycle actually starts
                 self.current_cycle_time = cycle_time
                 self.current_duration = duration
                 
@@ -140,6 +141,12 @@ class SimpleGPIOController:
             start_time = time.time()
             
             while not self.stop_event.is_set():
+                # Set cycle_start_time right before GPIO fires (for accurate frontend sync)
+                if self.cycle_start_time is None:
+                    with self.lock:
+                        self.cycle_start_time = time.time()
+                    self.logger.info(f"Cycle started at {self.cycle_start_time} for {color}")
+                
                 # Check if scheduled activation should end (only for scheduled activations with duration)
                 if is_scheduled and activation_duration is not None and not self.user_override:
                     if time.time() - start_time >= activation_duration:
