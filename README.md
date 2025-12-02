@@ -53,7 +53,7 @@ A sophisticated web-based scent dispenser controller with a fancy matte design a
    
    # On Windows:
    .venv\Scripts\activate
-   ```
+   ```s
    
    ⚠️ **Important**: Make sure the virtual environment is activated before installing packages!
    You should see `(.venv)` at the beginning of your command prompt.
