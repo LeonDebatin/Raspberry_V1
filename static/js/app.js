@@ -98,10 +98,10 @@ function formatTime(timeString) {
 
 function getFormulaDisplayName(color) {
     const names = {
-        red: 'Crimson',
-        blue: 'Azure',
+        red: 'Floral',
+        blue: 'Fresh',
         yellow: 'Amber',
-        green: 'Sage'
+        green: 'Woody'
     };
     return names[color] || color;
 }

@@ -223,7 +223,7 @@
 }
 
 .sage {
-    background: linear-gradient(135deg, var(--green) 0%, #5a8a5a 100%);
+    background: linear-gradient(135deg, #8B4513 0%, #654321 100%);
     left: calc(50% + 77.78px);
     top: calc(50% - 77.78px);
 }
@@ -426,7 +426,7 @@
 }
 
 .scent-description.sage {
-    background: rgba(107, 155, 107, 0.75);
+    background: rgba(139, 69, 19, 0.75);
 }
 
 .scent-description.azure {
@@ -480,7 +480,7 @@
 }
 
 .schedule-info.sage {
-    background: rgba(107, 155, 107, 0.75);
+    background: rgba(139, 69, 19, 0.75);
 }
 
 .schedule-info.azure {
@@ -635,11 +635,11 @@
 }
 
 .schedule-activate-btn.sage {
-    background: var(--green);
+    background: #8B4513;
 }
 
 .schedule-activate-btn.sage:hover {
-    background: #5a8a5a;
+    background: #654321;
 }
 
 /* Mobile optimizations */
@@ -685,14 +685,14 @@
 @keyframes pulse {
     0% {
         transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(107, 155, 107, 0.7);
+        box-shadow: 0 0 0 0 rgba(139, 69, 19, 0.7);
     }
     50% {
         transform: scale(1.05);
-        box-shadow: 0 0 0 10px rgba(107, 155, 107, 0);
+        box-shadow: 0 0 0 10px rgba(139, 69, 19, 0);
     }
     100% {
         transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(107, 155, 107, 0);
+        box-shadow: 0 0 0 0 rgba(139, 69, 19, 0);
     }
 }

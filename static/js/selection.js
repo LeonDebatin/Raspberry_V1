@@ -16,9 +16,9 @@ class SelectionController {
         // Scent descriptions for all modes
         this.scentDescriptions = {
             'yellow': 'Warm and inviting amber creates a cozy atmosphere with rich, honeyed notes.',
-            'green': 'Fresh sage brings clarity and purification with herbal, earthy essence.',
-            'blue': 'Cool azure refreshes the mind with crisp, oceanic tranquility.',
-            'red': 'Bold crimson energizes the space with deep, passionate intensity.'
+            'green': 'Natural woody brings clarity and grounding with warm, earthy essence.',
+            'blue': 'Cool fresh refreshes the mind with crisp, oceanic tranquility.',
+            'red': 'Bold floral energizes the space with deep, passionate intensity.'
         };
         
         // Configuration: Set to true to use page reload instead of position reset
@@ -325,10 +325,10 @@ class SelectionController {
             // Get the schedule color from current schedule or default to blue
             const scheduleColor = this.currentSchedule?.formula || 'blue';
             const scentColorMap = {
-                'blue': '#007bff',    // Azure - Blue
+                'blue': '#007bff',    // Fresh - Blue
                 'yellow': '#ffc107',  // Amber - Yellow
-                'green': '#28a745',   // Sage - Green  
-                'red': '#dc3545'      // Crimson - Red
+                'green': '#8B4513',   // Woody - Brown  
+                'red': '#dc3545'      // Floral - Red
             };
             const buttonColor = scentColorMap[scheduleColor] || '#007bff';
             
@@ -916,9 +916,9 @@ class SelectionController {
         
         const colorNames = {
             'yellow': 'Amber',
-            'green': 'Sage', 
-            'blue': 'Azure',
-            'red': 'Crimson'
+            'green': 'Woody', 
+            'blue': 'Fresh',
+            'red': 'Floral'
         };
         const colorClassNames = {
             'yellow': 'amber',
@@ -1035,70 +1035,15 @@ class SelectionController {
                 
                 return true; // Paused schedule info was shown
             } 
-            // Check if we have a stored currentSchedule that should remain visible as inactive
-            else if (this.currentSchedule && this.currentSchedule.id) {
-                console.log('📋 Showing stored schedule as inactive');
-                
-                const scheduledFormula = this.currentSchedule.formula;
-                const scent = this.getFormulaDisplayName(scheduledFormula);
-                const recurrence = this.getRecurrenceDisplayName(this.currentSchedule.recurrence || 'daily');
-                const startTime = this.currentSchedule.start_time || 'Unknown';
-                const endTime = this.currentSchedule.end_time || 'Unknown';
-                
-                // Update schedule details text
-                this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
-                this.scheduleDetails.style.color = ''; // Reset color
-                
-                // Show as inactive
-                this.makeScheduleInfoInactive();
-                
-                // Apply color class and show the container
-                this.applyScheduleColor(scheduledFormula);
-                this.scheduleInfo.classList.remove('hidden');
-                
-                return true; // Inactive schedule info was shown
-            }
-            // Check for stored inactive schedule from localStorage
+            // No active or paused schedule from API - clear everything
             else {
-                const storedInactiveSchedule = localStorage.getItem('inactiveSchedule');
-                if (storedInactiveSchedule) {
-                    try {
-                        const inactiveSchedule = JSON.parse(storedInactiveSchedule);
-                        // Only show if it's recent (within last 24 hours)
-                        const hoursSinceInactive = (Date.now() - inactiveSchedule.inactiveAt) / (1000 * 60 * 60);
-                        
-                        if (hoursSinceInactive < 24) {
-                            console.log('📋 Showing stored inactive schedule from localStorage');
-                            
-                            this.currentSchedule = inactiveSchedule;
-                            const scheduledFormula = inactiveSchedule.formula;
-                            const scent = this.getFormulaDisplayName(scheduledFormula);
-                            const recurrence = this.getRecurrenceDisplayName(inactiveSchedule.recurrence || 'daily');
-                            const startTime = inactiveSchedule.start_time || 'Unknown';
-                            const endTime = inactiveSchedule.end_time || 'Unknown';
-                            
-                            // Update schedule details text
-                            this.scheduleDetails.textContent = `${scent} - ${recurrence} | ${startTime} - ${endTime}`;
-                            this.scheduleDetails.style.color = ''; // Reset color
-                            
-                            // Show as inactive
-                            this.makeScheduleInfoInactive();
-                            
-                            // Apply color class and show the container
-                            this.applyScheduleColor(scheduledFormula);
-                            this.scheduleInfo.classList.remove('hidden');
-                            
-                            return true; // Stored inactive schedule info was shown
-                        } else {
-                            // Remove old inactive schedule
-                            localStorage.removeItem('inactiveSchedule');
-                        }
-                    } catch (e) {
-                        console.error('Error parsing stored inactive schedule:', e);
-                        localStorage.removeItem('inactiveSchedule');
-                    }
-                }
+                console.log('📋 No active or paused schedule from API - clearing schedule info');
                 
+                // Clear stored schedules
+                this.currentSchedule = null;
+                localStorage.removeItem('inactiveSchedule');
+                
+                // Hide schedule info
                 this.hideScheduleInfo();
                 return false; // No schedule to show
             }
@@ -1253,10 +1198,10 @@ class SelectionController {
     
     getFormulaDisplayName(color) {
         const displayNames = {
-            'red': 'Crimson',
-            'blue': 'Azure', 
+            'red': 'Floral',
+            'blue': 'Fresh', 
             'yellow': 'Amber',
-            'green': 'Sage'
+            'green': 'Woody'
         };
         return displayNames[color] || color.charAt(0).toUpperCase() + color.slice(1);
     }
@@ -1575,10 +1520,10 @@ class KeyboardShortcuts {
 // Helper function to get display names for formulas
 function getFormulaDisplayName(color) {
     const displayNames = {
-        'red': 'Crimson',
-        'blue': 'Azure', 
+        'red': 'Floral',
+        'blue': 'Fresh', 
         'yellow': 'Amber',
-        'green': 'Sage',
+        'green': 'Woody',
         'off': 'Off'
     };
     return displayNames[color] || color.charAt(0).toUpperCase() + color.slice(1);

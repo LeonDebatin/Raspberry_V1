@@ -1047,12 +1047,12 @@ div.schedule-indicator.paused:hover {
 }
 
 .calendar-activate-btn.sage {
-    background: #28a745 !important;
+    background: #8B4513 !important;
 }
 
 .calendar-activate-btn.sage:hover {
-    background: #1e7e34 !important;
-    box-shadow: 0 2px 6px rgba(40, 167, 69, 0.4);
+    background: #654321 !important;
+    box-shadow: 0 2px 6px rgba(139, 69, 19, 0.4);
 }
 
 /* Ensure schedule events have relative positioning for the activate button */

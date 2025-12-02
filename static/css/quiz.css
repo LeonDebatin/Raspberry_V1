@@ -114,7 +114,7 @@
 }
 
 .color-dot.sage {
-    background: linear-gradient(45deg, #27ae60, #229954);
+    background: linear-gradient(45deg, #8B4513, #654321);
 }
 
 /* Question Section */
@@ -313,7 +313,7 @@
 }
 
 .score-fill.sage {
-    background: linear-gradient(90deg, #27ae60, #229954);
+    background: linear-gradient(90deg, #8B4513, #654321);
 }
 
 .score-value {

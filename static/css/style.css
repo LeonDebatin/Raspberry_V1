@@ -10,7 +10,7 @@
     --red: #c5554a;
     --blue: #4a90c5;
     --yellow: #c5a54a;
-    --green: #6b9b6b;
+    --green: #8B4513;
     --accent: #666666;
     --success: #555555;
     --error: #333333;
@@ -272,7 +272,7 @@ body {
 }
 
 .sage {
-    background: linear-gradient(135deg, var(--green) 0%, #5a8a5a 100%);
+    background: linear-gradient(135deg, #8B4513 0%, #654321 100%);
     left: calc(50% + 77.78px);
     top: calc(50% - 77.78px);
 }

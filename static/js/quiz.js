@@ -284,10 +284,10 @@ class QuizController {
     displayScoreBreakdown(scores) {
         const maxScore = Math.max(...Object.values(scores));
         const scentNames = {
-            'red': 'CRIMSON',
-            'blue': 'AZURE', 
+            'red': 'FLORAL',
+            'blue': 'FRESH', 
             'yellow': 'AMBER',
-            'green': 'SAGE'
+            'green': 'WOODY'
         };
         
         this.scoreChart.innerHTML = '';

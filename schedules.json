@@ -13,16 +13,6 @@
       "executed": true
     },
     {
-      "id": 5,
-      "start_time": "17:00",
-      "end_time": "18:00",
-      "formula": "yellow",
-      "cycle_time": 60,
-      "duration": 10,
-      "recurrence": "daily",
-      "enabled": true
-    },
-    {
       "id": 6,
       "start_time": "18:00",
       "end_time": "19:00",
@@ -34,48 +24,6 @@
       "paused": false,
       "schedule_date": "2025-09-28",
       "executed": true
-    },
-    {
-      "id": 7,
-      "start_time": "21:00",
-      "end_time": "22:00",
-      "formula": "red",
-      "cycle_time": 60,
-      "duration": 10,
-      "recurrence": "daily",
-      "enabled": true
-    },
-    {
-      "id": 8,
-      "start_time": "22:00",
-      "end_time": "23:00",
-      "formula": "yellow",
-      "cycle_time": 60,
-      "duration": 10,
-      "recurrence": "daily",
-      "enabled": true,
-      "paused": true,
-      "paused_at": "2025-09-30T22:00:27.537846"
-    },
-    {
-      "id": 9,
-      "start_time": "19:00",
-      "end_time": "20:00",
-      "formula": "blue",
-      "cycle_time": 60,
-      "duration": 50,
-      "recurrence": "daily",
-      "enabled": true
-    },
-    {
-      "id": 10,
-      "start_time": "18:00",
-      "end_time": "19:00",
-      "formula": "red",
-      "cycle_time": 60,
-      "duration": 10,
-      "recurrence": "daily",
-      "enabled": true
     },
     {
       "id": 11,
@@ -100,16 +48,6 @@
       "enabled": false,
       "schedule_date": "2025-09-30",
       "executed": true
-    },
-    {
-      "id": 13,
-      "start_time": "20:00",
-      "end_time": "21:00",
-      "formula": "yellow",
-      "cycle_time": 60,
-      "duration": 10,
-      "recurrence": "daily",
-      "enabled": true
     }
   ]
 }
